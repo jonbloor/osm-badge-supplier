@@ -1,0 +1,223 @@
+/**
+ * Landing page styles for OSM Badge Supplier landing page.
+ * Purple #7413DC / teal #00A794 (Scout Association-inspired accents).
+ */
+
+.osm-badge-landing {
+	max-width: 860px;
+	margin: 2rem auto;
+	padding: 0 1.25rem 3rem;
+	font-size: 1rem;
+	line-height: 1.5;
+	color: #1a1a1a;
+}
+
+.osm-badge-landing__inner {
+	background: #fff;
+	border: 1px solid #e8e4f0;
+	border-radius: 8px;
+	padding: 1.75rem 1.5rem 2rem;
+	box-shadow: 0 2px 8px rgba(116, 19, 220, 0.06);
+}
+
+.osm-badge-landing__header {
+	margin-bottom: 1.5rem;
+	border-bottom: 3px solid #7413DC;
+	padding-bottom: 1rem;
+}
+
+.osm-badge-landing__title {
+	margin: 0 0 0.35rem;
+	font-size: 1.75rem;
+	color: #7413DC;
+}
+
+.osm-badge-landing__section {
+	margin: 0;
+	color: #444;
+}
+
+.osm-badge-landing__dry-run {
+	margin: 0.75rem 0 0;
+	padding: 0.5rem 0.75rem;
+	background: #f5f0ff;
+	border-left: 4px solid #7413DC;
+	color: #3d1a6e;
+	font-size: 0.95rem;
+}
+
+.osm-badge-landing__admin-hint {
+	margin-bottom: 1.25rem;
+	padding: 0.75rem 1rem;
+	background: #fff8e6;
+	border: 1px solid #e6c200;
+	border-radius: 4px;
+}
+
+.osm-badge-landing__admin-hint p {
+	margin: 0;
+}
+
+.osm-badge-landing__error {
+	margin-bottom: 1.5rem;
+	padding: 1rem 1.15rem;
+	background: #fef2f2;
+	border: 1px solid #f5c2c2;
+	border-left: 5px solid #c0392b;
+	border-radius: 4px;
+}
+
+.osm-badge-landing__error p {
+	margin: 0 0 0.5rem;
+}
+
+.osm-badge-landing__error p:last-child {
+	margin-bottom: 0;
+}
+
+.osm-badge-landing__hint {
+	font-size: 0.95rem;
+	color: #555;
+}
+
+.osm-badge-landing__unavailable {
+	margin-bottom: 1.75rem;
+	padding: 1rem 1.15rem;
+	background: #e8faf7;
+	border: 1px solid #00A794;
+	border-left: 6px solid #00A794;
+	border-radius: 4px;
+}
+
+.osm-badge-landing__unavailable h2 {
+	margin: 0 0 0.5rem;
+	font-size: 1.25rem;
+	color: #006b5f;
+}
+
+.osm-badge-landing__unavailable > p {
+	margin: 0 0 0.75rem;
+	color: #234;
+}
+
+.osm-badge-landing__unavailable-list {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+
+.osm-badge-landing__unavailable-list li {
+	margin-bottom: 0.65rem;
+}
+
+.osm-badge-landing__unavailable-list li:last-child {
+	margin-bottom: 0;
+}
+
+.osm-badge-landing__meta {
+	display: inline-block;
+	margin-left: 0.35rem;
+	color: #555;
+	font-size: 0.9rem;
+}
+
+.osm-badge-landing__reason {
+	display: block;
+	margin-top: 0.15rem;
+	color: #333;
+	font-size: 0.95rem;
+}
+
+.osm-badge-landing__added h2 {
+	margin: 0 0 0.75rem;
+	font-size: 1.25rem;
+	color: #7413DC;
+}
+
+.osm-badge-landing__table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 1.5rem;
+}
+
+.osm-badge-landing__table th,
+.osm-badge-landing__table td {
+	text-align: left;
+	padding: 0.6rem 0.5rem;
+	border-bottom: 1px solid #ece8f5;
+	vertical-align: top;
+}
+
+.osm-badge-landing__table th {
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	color: #555;
+	background: #faf8ff;
+}
+
+.osm-badge-landing__table code {
+	font-size: 0.9rem;
+	background: #f3f0fa;
+	padding: 0.1rem 0.35rem;
+	border-radius: 3px;
+}
+
+.osm-badge-landing__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-top: 0.5rem;
+}
+
+.osm-badge-landing__btn {
+	display: inline-block;
+	padding: 0.65rem 1.25rem;
+	border-radius: 4px;
+	text-decoration: none;
+	font-weight: 600;
+	line-height: 1.2;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.osm-badge-landing__btn--primary {
+	background: #7413DC;
+	color: #fff;
+}
+
+.osm-badge-landing__btn--primary:hover,
+.osm-badge-landing__btn--primary:focus {
+	background: #5c0fb0;
+	color: #fff;
+}
+
+.osm-badge-landing__btn--secondary {
+	background: #fff;
+	color: #00A794;
+	border: 2px solid #00A794;
+}
+
+.osm-badge-landing__btn--secondary:hover,
+.osm-badge-landing__btn--secondary:focus {
+	background: #e8faf7;
+	color: #006b5f;
+}
+
+@media (max-width: 600px) {
+	.osm-badge-landing__table thead {
+		display: none;
+	}
+
+	.osm-badge-landing__table tr {
+		display: block;
+		margin-bottom: 0.75rem;
+		border: 1px solid #ece8f5;
+		border-radius: 4px;
+		padding: 0.5rem;
+	}
+
+	.osm-badge-landing__table td {
+		display: block;
+		border: 0;
+		padding: 0.25rem 0;
+	}
+}
