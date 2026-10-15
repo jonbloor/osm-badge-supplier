@@ -20,9 +20,9 @@
 defined( 'ABSPATH' ) || exit;
 
 /*
- * Bail if another copy of this plugin is already loaded (e.g. leftover folder
- * from a GitHub zip or a second Upload Plugin). Without this, PHP fatals with
- * "Cannot redeclare function osm_badge_supplier_bootstrap()".
+ * Another copy already loaded (leftover Upload Plugin / GitHub zip folder).
+ * Unconditional function declarations are registered at compile time, so we
+ * must not re-run define()/hooks; function_exists guards below stop fatals.
  */
 if ( defined( 'OSM_BADGE_SUPPLIER_VERSION' ) ) {
 	add_action(
@@ -46,11 +46,6 @@ define( 'OSM_BADGE_SUPPLIER_URL', plugin_dir_url( __FILE__ ) );
 define( 'OSM_BADGE_SUPPLIER_DEFAULT_HOST', 'https://www.onlinescoutmanager.co.uk' );
 define( 'OSM_BADGE_SUPPLIER_DEFAULT_SLUG', 'osm-order' );
 
-/**
- * Declare WooCommerce feature compatibility (HPOS / custom order tables, etc.).
- *
- * Must run on before_woocommerce_init — before WooCommerce boots features.
- */
 add_action(
 	'before_woocommerce_init',
 	static function () {
@@ -70,66 +65,74 @@ add_action(
 	}
 );
 
-/**
- * Bootstrap after plugins loaded so WooCommerce is available to check.
- */
-function osm_badge_supplier_bootstrap() {
-	load_plugin_textdomain( 'osm-badge-supplier', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+if ( ! function_exists( 'osm_badge_supplier_bootstrap' ) ) {
+	/**
+	 * Bootstrap after plugins loaded so WooCommerce is available to check.
+	 */
+	function osm_badge_supplier_bootstrap() {
+		load_plugin_textdomain( 'osm-badge-supplier', false, dirname( plugin_basename( OSM_BADGE_SUPPLIER_FILE ) ) . '/languages' );
 
-	if ( ! class_exists( 'WooCommerce' ) ) {
-		add_action( 'admin_notices', 'osm_badge_supplier_wc_missing_notice' );
-		return;
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			add_action( 'admin_notices', 'osm_badge_supplier_wc_missing_notice' );
+			return;
+		}
+
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-settings.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-client.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-cart-mapper.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-landing.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-empty-basket.php';
+
+		OSM_Badge_Supplier_Settings::init();
+		OSM_Badge_Supplier_Landing::init();
+		OSM_Badge_Supplier_Empty_Basket::init();
 	}
-
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-settings.php';
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-client.php';
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-cart-mapper.php';
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-landing.php';
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-empty-basket.php';
-
-	OSM_Badge_Supplier_Settings::init();
-	OSM_Badge_Supplier_Landing::init();
-	OSM_Badge_Supplier_Empty_Basket::init();
 }
 add_action( 'plugins_loaded', 'osm_badge_supplier_bootstrap' );
 
-/**
- * Admin notice when WooCommerce is not active.
- */
-function osm_badge_supplier_wc_missing_notice() {
-	if ( ! current_user_can( 'activate_plugins' ) ) {
-		return;
+if ( ! function_exists( 'osm_badge_supplier_wc_missing_notice' ) ) {
+	/**
+	 * Admin notice when WooCommerce is not active.
+	 */
+	function osm_badge_supplier_wc_missing_notice() {
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p>';
+		echo esc_html__( 'OSM Badge Supplier requires WooCommerce to be installed and active.', 'osm-badge-supplier' );
+		echo '</p></div>';
 	}
-	echo '<div class="notice notice-error"><p>';
-	echo esc_html__( 'OSM Badge Supplier requires WooCommerce to be installed and active.', 'osm-badge-supplier' );
-	echo '</p></div>';
 }
 
-/**
- * Activation: flush rewrite rules after registering.
- */
-function osm_badge_supplier_activate() {
-	if ( ! class_exists( 'WooCommerce' ) ) {
-		deactivate_plugins( plugin_basename( __FILE__ ) );
-		wp_die(
-			esc_html__( 'OSM Badge Supplier requires WooCommerce. Please install and activate WooCommerce first.', 'osm-badge-supplier' ),
-			esc_html__( 'Plugin Activation Error', 'osm-badge-supplier' ),
-			array( 'back_link' => true )
-		);
+if ( ! function_exists( 'osm_badge_supplier_activate' ) ) {
+	/**
+	 * Activation: flush rewrite rules after registering.
+	 */
+	function osm_badge_supplier_activate() {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			deactivate_plugins( plugin_basename( OSM_BADGE_SUPPLIER_FILE ) );
+			wp_die(
+				esc_html__( 'OSM Badge Supplier requires WooCommerce. Please install and activate WooCommerce first.', 'osm-badge-supplier' ),
+				esc_html__( 'Plugin Activation Error', 'osm-badge-supplier' ),
+				array( 'back_link' => true )
+			);
+		}
+
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-settings.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-landing.php';
+
+		OSM_Badge_Supplier_Landing::register_rewrite();
+		flush_rewrite_rules();
 	}
-
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-settings.php';
-	require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-landing.php';
-
-	OSM_Badge_Supplier_Landing::register_rewrite();
-	flush_rewrite_rules();
 }
-register_activation_hook( __FILE__, 'osm_badge_supplier_activate' );
+register_activation_hook( OSM_BADGE_SUPPLIER_FILE, 'osm_badge_supplier_activate' );
 
-/**
- * Deactivation: flush rewrite rules.
- */
-function osm_badge_supplier_deactivate() {
-	flush_rewrite_rules();
+if ( ! function_exists( 'osm_badge_supplier_deactivate' ) ) {
+	/**
+	 * Deactivation: flush rewrite rules.
+	 */
+	function osm_badge_supplier_deactivate() {
+		flush_rewrite_rules();
+	}
 }
-register_deactivation_hook( __FILE__, 'osm_badge_supplier_deactivate' );
+register_deactivation_hook( OSM_BADGE_SUPPLIER_FILE, 'osm_badge_supplier_deactivate' );
