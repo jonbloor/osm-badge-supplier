@@ -152,6 +152,8 @@ class OSM_Badge_Supplier_Landing {
 			$view['error_code'] = 'missing_order_url';
 		}
 
+		$view['continue_url'] = self::continue_shopping_url( $view['section'] );
+
 		status_header( 200 );
 		nocache_headers();
 
@@ -174,5 +176,120 @@ class OSM_Badge_Supplier_Landing {
 		get_header();
 		include $template;
 		get_footer();
+	}
+
+	/**
+	 * Section key (squirrels/beavers/cubs/scouts/explorers) from OSM section data.
+	 *
+	 * @param mixed $section OSM section (string or array).
+	 * @return string Key or ''.
+	 */
+	public static function section_key( $section ) {
+		$texts = array();
+		if ( is_string( $section ) ) {
+			$texts[] = $section;
+		} elseif ( is_array( $section ) ) {
+			foreach ( array( 'type', 'section', 'sectiontype', 'section_type', 'name', 'sectionname', 'groupname' ) as $k ) {
+				if ( isset( $section[ $k ] ) && is_scalar( $section[ $k ] ) ) {
+					$texts[] = (string) $section[ $k ];
+				}
+			}
+		}
+		$text = strtolower( implode( ' ', $texts ) );
+
+		// Order matters: "Explorer Scouts", "Cub Scouts", "Beaver Scouts" all contain "scout".
+		$patterns = array(
+			'explorers' => '/\bexplorers?\b/',
+			'squirrels' => '/\bsquirrels?\b/',
+			'beavers'   => '/\bbeavers?\b/',
+			'cubs'      => '/\bcubs?\b/',
+			'scouts'    => '/\bscouts?\b/',
+		);
+		$key = '';
+		foreach ( $patterns as $k => $re ) {
+			if ( preg_match( $re, $text ) ) {
+				$key = $k;
+				break;
+			}
+		}
+		return (string) apply_filters( 'osm_badge_supplier_section_key', $key, $section );
+	}
+
+	/**
+	 * Continue shopping URL: category for the order's section, else Shop, else home.
+	 *
+	 * Prefers the section slug under the "badges" parent (e.g. /product-category/badges/beavers/),
+	 * then any category with that slug, then by name.
+	 *
+	 * @param mixed $section OSM section.
+	 * @return string
+	 */
+	public static function continue_shopping_url( $section ) {
+		$key = self::section_key( $section );
+		$url = '';
+
+		if ( '' !== $key && taxonomy_exists( 'product_cat' ) ) {
+			$map = apply_filters(
+				'osm_badge_supplier_section_category_slugs',
+				array(
+					'squirrels' => array( 'squirrels', 'squirrel' ),
+					'beavers'   => array( 'beavers', 'beaver' ),
+					'cubs'      => array( 'cubs', 'cub' ),
+					'scouts'    => array( 'scouts', 'scout' ),
+					'explorers' => array( 'explorers', 'explorer' ),
+				)
+			);
+			$slugs  = isset( $map[ $key ] ) ? (array) $map[ $key ] : array( $key );
+			$parent = get_term_by( 'slug', (string) apply_filters( 'osm_badge_supplier_badges_parent_slug', 'badges' ), 'product_cat' );
+			$term   = null;
+
+			if ( $parent && ! is_wp_error( $parent ) ) {
+				foreach ( $slugs as $slug ) {
+					$found = get_terms(
+						array(
+							'taxonomy'   => 'product_cat',
+							'slug'       => $slug,
+							'parent'     => (int) $parent->term_id,
+							'hide_empty' => false,
+							'number'     => 1,
+						)
+					);
+					if ( ! is_wp_error( $found ) && $found ) {
+						$term = $found[0];
+						break;
+					}
+				}
+			}
+			if ( ! $term ) {
+				foreach ( $slugs as $slug ) {
+					$t = get_term_by( 'slug', $slug, 'product_cat' );
+					if ( $t && ! is_wp_error( $t ) ) {
+						$term = $t;
+						break;
+					}
+				}
+			}
+			if ( ! $term ) {
+				$t = get_term_by( 'name', ucfirst( $key ), 'product_cat' );
+				if ( $t && ! is_wp_error( $t ) ) {
+					$term = $t;
+				}
+			}
+			if ( $term ) {
+				$link = get_term_link( $term );
+				if ( ! is_wp_error( $link ) ) {
+					$url = $link;
+				}
+			}
+		}
+
+		if ( '' === $url && function_exists( 'wc_get_page_id' ) && wc_get_page_id( 'shop' ) > 0 ) {
+			$url = wc_get_page_permalink( 'shop' );
+		}
+		if ( '' === $url ) {
+			$url = home_url( '/' );
+		}
+
+		return (string) apply_filters( 'osm_badge_supplier_continue_shopping_url', $url, $key, $section );
 	}
 }

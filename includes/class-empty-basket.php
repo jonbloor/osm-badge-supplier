@@ -9,6 +9,11 @@
  * - Anywhere via the [osm_empty_basket] shortcode (recommended for Elementor
  *   page-builder layouts: drop a Shortcode widget where you want the button).
  *
+ * Admin/testing only by default: shown and accepted only for logged-in users
+ * with manage_woocommerce or manage_options (label "Empty basket (admin)").
+ * Applies everywhere (landing, cart auto hooks, shortcode). Open to all with:
+ *   add_filter( 'osm_badge_supplier_empty_basket_public', '__return_true' );
+ *
  * Disable the automatic cart-page placement with:
  *   add_filter( 'osm_badge_supplier_auto_cart_empty_button', '__return_false' );
  *
@@ -50,6 +55,37 @@ class OSM_Badge_Supplier_Empty_Basket {
 	}
 
 	/**
+	 * Whether the button is open to everyone (default: no, admin/testing only).
+	 *
+	 * Re-enable for all visitors with:
+	 *   add_filter( 'osm_badge_supplier_empty_basket_public', '__return_true' );
+	 *
+	 * @return bool
+	 */
+	public static function is_public() {
+		return (bool) apply_filters( 'osm_badge_supplier_empty_basket_public', false );
+	}
+
+	/**
+	 * Whether the current user may see/use the Empty basket button.
+	 *
+	 * @return bool
+	 */
+	public static function current_user_allowed() {
+		if ( self::is_public() ) {
+			return true;
+		}
+		return is_user_logged_in() && ( current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ) );
+	}
+
+	/**
+	 * @return string
+	 */
+	protected static function default_label() {
+		return self::is_public() ? __( 'Empty basket', 'osm-badge-supplier' ) : __( 'Empty basket (admin)', 'osm-badge-supplier' );
+	}
+
+	/**
 	 * Nonce action tied to this WooCommerce customer session.
 	 *
 	 * Guests all share user ID 0, so a plain action would give every guest the
@@ -76,6 +112,17 @@ class OSM_Badge_Supplier_Empty_Basket {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below.
 		if ( empty( $_POST['osm_badge_action'] ) || self::ACTION !== $_POST['osm_badge_action'] ) {
 			return;
+		}
+
+		if ( ! self::current_user_allowed() ) {
+			wp_die(
+				esc_html__( 'You are not allowed to do that.', 'osm-badge-supplier' ),
+				esc_html__( 'Empty basket', 'osm-badge-supplier' ),
+				array(
+					'response'  => 403,
+					'back_link' => true,
+				)
+			);
 		}
 
 		$nonce = isset( $_POST[ self::NONCE ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::NONCE ] ) ) : '';
@@ -128,10 +175,14 @@ class OSM_Badge_Supplier_Empty_Basket {
 	 * @return string
 	 */
 	public static function render_button( $args = array() ) {
+		if ( ! self::current_user_allowed() ) {
+			return '';
+		}
+
 		$args = wp_parse_args(
 			$args,
 			array(
-				'label'    => __( 'Empty basket', 'osm-badge-supplier' ),
+				'label'    => self::default_label(),
 				'confirm'  => __( 'Remove everything from your basket? This cannot be undone.', 'osm-badge-supplier' ),
 				'redirect' => '',
 				'class'    => '',
@@ -174,7 +225,7 @@ class OSM_Badge_Supplier_Empty_Basket {
 	public static function shortcode( $atts ) {
 		$atts = shortcode_atts(
 			array(
-				'label'    => __( 'Empty basket', 'osm-badge-supplier' ),
+				'label'    => self::default_label(),
 				'redirect' => '',
 				'class'    => '',
 			),

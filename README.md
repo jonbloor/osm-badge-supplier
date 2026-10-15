@@ -36,6 +36,8 @@ The Worker accepts POST with `client_id` + `order_url` and header `X-OSM-Relay-S
 
 ## Empty basket button
 
+- **Admin/testing only by default** (manage_woocommerce or manage_options), label "Empty basket (admin)", enforced server-side (403). Open to all: `add_filter( 'osm_badge_supplier_empty_basket_public', '__return_true' );`
+
 - Shown automatically on the `/osm-order/` result and on carts via `woocommerce_before_cart` (classic / shortcode / Elementor Cart widget) and `render_block` for `woocommerce/cart`.
 - For custom Elementor/Astra basket pages where those hooks do not run, add a **Shortcode** widget with `[osm_empty_basket]` (attrs: `label`, `redirect`, `class`).
 - Disable auto placement: `add_filter( 'osm_badge_supplier_auto_cart_empty_button', '__return_false' );`

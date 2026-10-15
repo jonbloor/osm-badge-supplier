@@ -21,6 +21,7 @@ $dry_run         = ! empty( $view['dry_run'] );
 $client_id_empty = ! empty( $view['client_id_empty'] );
 $cart_url        = isset( $view['cart_url'] ) ? $view['cart_url'] : '#';
 $checkout_url    = isset( $view['checkout_url'] ) ? $view['checkout_url'] : '#';
+$continue_url    = ! empty( $view['continue_url'] ) ? $view['continue_url'] : home_url( '/' );
 
 $section_label = '';
 if ( is_string( $section ) && '' !== $section ) {
@@ -177,16 +178,16 @@ if ( is_string( $section ) && '' !== $section ) {
 
 		<?php if ( ! $error || ! empty( $added ) ) : ?>
 			<nav class="osm-badge-landing__actions" aria-label="<?php echo esc_attr__( 'Cart actions', 'osm-badge-supplier' ); ?>">
-				<a class="osm-badge-landing__btn osm-badge-landing__btn--secondary" href="<?php echo esc_url( $cart_url ); ?>">
-					<?php echo esc_html__( 'View cart', 'osm-badge-supplier' ); ?>
-				</a>
-				<?php if ( ! $dry_run ) : ?>
-					<?php echo OSM_Badge_Supplier_Empty_Basket::render_button(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in render_button(). ?>
-				<?php endif; ?>
 				<?php if ( ! empty( $added ) && ! $dry_run ) : ?>
 					<a class="osm-badge-landing__btn osm-badge-landing__btn--primary" href="<?php echo esc_url( $checkout_url ); ?>">
 						<?php echo esc_html__( 'Checkout', 'osm-badge-supplier' ); ?>
 					</a>
+				<?php endif; ?>
+				<a class="osm-badge-landing__btn osm-badge-landing__btn--secondary osm-badge-landing__btn--continue" href="<?php echo esc_url( $continue_url ); ?>">
+					<?php echo esc_html__( 'Continue shopping', 'osm-badge-supplier' ); ?>
+				</a>
+				<?php if ( ! $dry_run ) : ?>
+					<?php echo OSM_Badge_Supplier_Empty_Basket::render_button(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped; admin-only by default. ?>
 				<?php endif; ?>
 			</nav>
 		<?php endif; ?>

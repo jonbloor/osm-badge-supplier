@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -73,6 +73,11 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 
 == Changelog ==
 
+= 1.0.9 =
+* Landing result buttons: Checkout (primary), Continue shopping (product category for the order's section: Squirrels/Beavers/Cubs/Scouts/Explorers; falls back to Shop, then home), Empty basket (admin). View cart removed.
+* Empty basket is admin/testing only everywhere (landing, cart auto hooks, shortcode): shown and accepted only for manage_woocommerce or manage_options; server-side 403 otherwise. Open to all: `add_filter( 'osm_badge_supplier_empty_basket_public', '__return_true' );`
+* Filters: osm_badge_supplier_section_key, osm_badge_supplier_section_category_slugs, osm_badge_supplier_badges_parent_slug, osm_badge_supplier_continue_shopping_url.
+
 = 1.0.8 =
 * Prevent fatal "Cannot redeclare function" when a second copy of the plugin folder is present (e.g. leftover from Upload Plugin / GitHub zip).
 
@@ -106,6 +111,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.9 =
+Empty basket becomes admin-only; adds Continue shopping on the landing page.
 
 = 1.0.8 =
 Safer activation when an old plugin folder is still installed.
