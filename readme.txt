@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -73,6 +73,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 
 == Changelog ==
 
+= 1.0.7 =
+* Empty basket nonce is now tied to the WooCommerce customer session, so guests no longer share one nonce.
+
 = 1.0.6 =
 * Landing "Added to basket" table no longer appends the "(n)" level number after each badge name.
 * New setting "Admin debug panel" (off by default) gates the Admin debug (OSM HTTP) panel.
@@ -100,6 +103,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.7 =
+Security hardening for the Empty basket nonce.
 
 = 1.0.6 =
 Adds Empty basket button/shortcode and makes the admin debug panel opt-in.

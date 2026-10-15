@@ -46,6 +46,26 @@ class OSM_Badge_Supplier_Empty_Basket {
 	}
 
 	/**
+	 * Nonce action tied to this WooCommerce customer session.
+	 *
+	 * Guests all share user ID 0, so a plain action would give every guest the
+	 * same nonce. Adding the WC customer unique id makes it per-session.
+	 *
+	 * @return string
+	 */
+	protected static function nonce_action() {
+		$customer = '';
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			if ( method_exists( WC()->session, 'get_customer_unique_id' ) ) {
+				$customer = (string) WC()->session->get_customer_unique_id();
+			} elseif ( method_exists( WC()->session, 'get_customer_id' ) ) {
+				$customer = (string) WC()->session->get_customer_id();
+			}
+		}
+		return self::ACTION . '|' . $customer;
+	}
+
+	/**
 	 * Handle the POSTed empty-basket request.
 	 */
 	public static function handle_request() {
@@ -55,7 +75,7 @@ class OSM_Badge_Supplier_Empty_Basket {
 		}
 
 		$nonce = isset( $_POST[ self::NONCE ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::NONCE ] ) ) : '';
-		if ( ! wp_verify_nonce( $nonce, self::ACTION ) ) {
+		if ( '' === $nonce || ! wp_verify_nonce( $nonce, self::nonce_action() ) ) {
 			wp_die(
 				esc_html__( 'This link has expired. Please go back, refresh the page and try again.', 'osm-badge-supplier' ),
 				esc_html__( 'Empty basket', 'osm-badge-supplier' ),
@@ -133,7 +153,7 @@ class OSM_Badge_Supplier_Empty_Basket {
 		$html  = '<form class="osm-empty-basket" method="post" action="' . esc_url( self::current_url() ) . '"';
 		$html .= ' onsubmit="return window.confirm(' . esc_attr( $confirm ) . ');" style="display:inline-block;margin:0 0 1em;">';
 		$html .= '<input type="hidden" name="osm_badge_action" value="' . esc_attr( self::ACTION ) . '" />';
-		$html .= wp_nonce_field( self::ACTION, self::NONCE, false, false );
+		$html .= wp_nonce_field( self::nonce_action(), self::NONCE, false, false );
 		$html .= '<input type="hidden" name="osm_redirect" value="' . esc_attr( $redirect ) . '" />';
 		$html .= '<button type="submit" class="' . esc_attr( $classes ) . '">' . esc_html( $args['label'] ) . '</button>';
 		$html .= '</form>';

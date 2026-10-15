@@ -3,7 +3,7 @@
  * Plugin Name:       OSM Badge Supplier
  * Plugin URI:        https://shop.leicestershirescouts.org.uk/
  * Description:       Connect Online Scout Manager badge orders to WooCommerce (map stock_code to SKU, stage cart).
- * Version:           1.0.6
+ * Version:           1.0.7
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Requires at least: 5.8
@@ -19,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OSM_BADGE_SUPPLIER_VERSION', '1.0.6' );
+define( 'OSM_BADGE_SUPPLIER_VERSION', '1.0.7' );
 define( 'OSM_BADGE_SUPPLIER_FILE', __FILE__ );
 define( 'OSM_BADGE_SUPPLIER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'OSM_BADGE_SUPPLIER_URL', plugin_dir_url( __FILE__ ) );
