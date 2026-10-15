@@ -34,10 +34,16 @@ Then in WooCommerce → OSM Badges set **OSM relay URL** to your `https://….wo
 
 The Worker accepts POST with `client_id` + `order_url` and header `X-OSM-Relay-Secret`, and forwards to OSM with `client_id` only in the body.
 
+## Empty basket button
+
+- Shown automatically on the `/osm-order/` result and on carts via `woocommerce_before_cart` (classic / shortcode / Elementor Cart widget) and `render_block` for `woocommerce/cart`.
+- For custom Elementor/Astra basket pages where those hooks do not run, add a **Shortcode** widget with `[osm_empty_basket]` (attrs: `label`, `redirect`, `class`).
+- Disable auto placement: `add_filter( 'osm_badge_supplier_auto_cart_empty_button', '__return_false' );`
+
 ## Security notes
 
 - Never commit Client ID, relay secrets, or live order URLs.
-- Admin-only debug on the landing page never prints `client_id` or the full order URL.
+- Admin-only debug on the landing page is off by default (WooCommerce → OSM Badges → Admin debug panel) and never prints `client_id` or the full order URL.
 - Order tokens expire in ~5 minutes and are not stored.
 
 ## Development

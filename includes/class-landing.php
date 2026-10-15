@@ -101,6 +101,7 @@ class OSM_Badge_Supplier_Landing {
 			'cart_url'         => function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/cart/' ),
 			'checkout_url'     => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : home_url( '/checkout/' ),
 			'has_order_url'    => false,
+			'show_admin_debug' => false,
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OSM inbound GET handshake.
@@ -121,7 +122,8 @@ class OSM_Badge_Supplier_Landing {
 
 			// Intentionally do not store $order_url anywhere (expires ~5 min).
 
-			if ( current_user_can( 'manage_woocommerce' ) ) {
+			$view['show_admin_debug'] = OSM_Badge_Supplier_Settings::is_admin_debug() && current_user_can( 'manage_woocommerce' );
+			if ( $view['show_admin_debug'] ) {
 				$view['debug'] = OSM_Badge_Supplier_OSM_Client::get_debug();
 			}
 

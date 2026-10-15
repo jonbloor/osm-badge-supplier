@@ -19,6 +19,7 @@ class OSM_Badge_Supplier_Settings {
 	const OPTION_RELAY_URL   = 'osm_badge_supplier_relay_url';
 	const OPTION_RELAY_SECRET = 'osm_badge_supplier_relay_secret';
 	const OPTION_PREV_SLUG   = 'osm_badge_supplier_prev_landing_slug';
+	const OPTION_ADMIN_DEBUG = 'osm_badge_supplier_admin_debug';
 
 	/**
 	 * Hook settings into WooCommerce and admin menu.
@@ -31,6 +32,7 @@ class OSM_Badge_Supplier_Settings {
 		add_filter( 'woocommerce_admin_settings_sanitize_option_' . self::OPTION_LANDING, array( __CLASS__, 'sanitize_landing_slug' ) );
 		add_filter( 'woocommerce_admin_settings_sanitize_option_' . self::OPTION_HOST, array( __CLASS__, 'sanitize_host' ) );
 		add_filter( 'woocommerce_admin_settings_sanitize_option_' . self::OPTION_DRY_RUN, array( __CLASS__, 'sanitize_checkbox' ) );
+		add_filter( 'woocommerce_admin_settings_sanitize_option_' . self::OPTION_ADMIN_DEBUG, array( __CLASS__, 'sanitize_checkbox' ) );
 		add_filter( 'woocommerce_admin_settings_sanitize_option_' . self::OPTION_CLIENT_ID, 'sanitize_text_field' );
 
 		add_action( 'admin_menu', array( __CLASS__, 'add_submenu' ), 60 );
@@ -128,6 +130,14 @@ class OSM_Badge_Supplier_Settings {
 				'autoload' => false,
 			),
 			array(
+				'title'    => __( 'Admin debug panel', 'osm-badge-supplier' ),
+				'desc'     => __( 'Show the "Admin debug (OSM HTTP)" panel on the landing page to shop admins. Off by default; never shown to customers.', 'osm-badge-supplier' ),
+				'id'       => self::OPTION_ADMIN_DEBUG,
+				'type'     => 'checkbox',
+				'default'  => 'no',
+				'autoload' => false,
+			),
+			array(
 				'type' => 'sectionend',
 				'id'   => 'osm_badge_supplier_section',
 			),
@@ -182,6 +192,15 @@ class OSM_Badge_Supplier_Settings {
 		register_setting(
 			'osm_badge_supplier_settings',
 			self::OPTION_DRY_RUN,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( __CLASS__, 'sanitize_checkbox' ),
+				'default'           => 'no',
+			)
+		);
+		register_setting(
+			'osm_badge_supplier_settings',
+			self::OPTION_ADMIN_DEBUG,
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( __CLASS__, 'sanitize_checkbox' ),
@@ -294,6 +313,7 @@ class OSM_Badge_Supplier_Settings {
 		$slug      = self::get_landing_slug();
 		$host      = self::get_osm_host();
 		$dry_run   = self::is_dry_run();
+		$debug_on  = self::is_admin_debug();
 		$landing   = home_url( '/' . $slug . '/' );
 		?>
 		<div class="wrap">
@@ -331,6 +351,16 @@ class OSM_Badge_Supplier_Settings {
 							<label>
 								<input name="<?php echo esc_attr( self::OPTION_DRY_RUN ); ?>" type="checkbox" value="yes" <?php checked( $dry_run ); ?> />
 								<?php echo esc_html__( 'Fetch and show mapping but do not add products to the cart.', 'osm-badge-supplier' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php echo esc_html__( 'Admin debug panel', 'osm-badge-supplier' ); ?></th>
+						<td>
+							<input type="hidden" name="<?php echo esc_attr( self::OPTION_ADMIN_DEBUG ); ?>" value="no" />
+							<label>
+								<input name="<?php echo esc_attr( self::OPTION_ADMIN_DEBUG ); ?>" type="checkbox" value="yes" <?php checked( $debug_on ); ?> />
+								<?php echo esc_html__( 'Show the "Admin debug (OSM HTTP)" panel on the landing page to shop admins (off by default; never shown to customers).', 'osm-badge-supplier' ); ?>
 							</label>
 						</td>
 					</tr>
@@ -399,5 +429,14 @@ class OSM_Badge_Supplier_Settings {
 	 */
 	public static function is_dry_run() {
 		return 'yes' === get_option( self::OPTION_DRY_RUN, 'no' );
+	}
+
+	/**
+	 * Whether the admin-only OSM HTTP debug panel is enabled (default off).
+	 *
+	 * @return bool
+	 */
+	public static function is_admin_debug() {
+		return 'yes' === get_option( self::OPTION_ADMIN_DEBUG, 'no' );
 	}
 }

@@ -68,7 +68,7 @@ if ( is_string( $section ) && '' !== $section ) {
 
 		<?php
 		$debug = ( isset( $view['debug'] ) && is_array( $view['debug'] ) ) ? $view['debug'] : null;
-		if ( $debug && current_user_can( 'manage_woocommerce' ) ) :
+		if ( $debug && ! empty( $view['show_admin_debug'] ) && current_user_can( 'manage_woocommerce' ) ) :
 			?>
 			<div class="osm-badge-landing__debug" role="status">
 				<p><strong><?php echo esc_html__( 'Admin debug (OSM HTTP — no secrets):', 'osm-badge-supplier' ); ?></strong></p>
@@ -162,10 +162,8 @@ if ( is_string( $section ) && '' !== $section ) {
 								<td>
 									<?php
 									$label = ! empty( $row['product_name'] ) ? (string) $row['product_name'] : (string) ( $row['name'] ?? '' );
+									// Level is already a separate staged product; do not append "(n)".
 									echo esc_html( $label );
-									if ( ! empty( $row['level'] ) ) {
-										echo ' <span class="osm-badge-landing__meta">(' . esc_html( (string) $row['level'] ) . ')</span>';
-									}
 									?>
 								</td>
 								<td><code><?php echo esc_html( isset( $row['sku'] ) ? (string) $row['sku'] : (string) ( $row['stock_code'] ?? '' ) ); ?></code></td>
@@ -182,6 +180,9 @@ if ( is_string( $section ) && '' !== $section ) {
 				<a class="osm-badge-landing__btn osm-badge-landing__btn--secondary" href="<?php echo esc_url( $cart_url ); ?>">
 					<?php echo esc_html__( 'View cart', 'osm-badge-supplier' ); ?>
 				</a>
+				<?php if ( ! $dry_run ) : ?>
+					<?php echo OSM_Badge_Supplier_Empty_Basket::render_button(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in render_button(). ?>
+				<?php endif; ?>
 				<?php if ( ! empty( $added ) && ! $dry_run ) : ?>
 					<a class="osm-badge-landing__btn osm-badge-landing__btn--primary" href="<?php echo esc_url( $checkout_url ); ?>">
 						<?php echo esc_html__( 'Checkout', 'osm-badge-supplier' ); ?>

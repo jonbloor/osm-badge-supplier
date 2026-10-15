@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,18 @@ Optional: enable Dry run to fetch and show mapping without adding products to th
 
 Optional relay: if direct OSM calls fail with an HTML “Blocked” response from your server IP, deploy `osm-relay-worker/`, set Relay URL and Relay secret in settings.
 
+Optional: enable Admin debug panel to show the "Admin debug (OSM HTTP)" panel on the landing page (shop admins only; off by default).
+
+== Empty basket button ==
+
+A nonce-protected "Empty basket" button (with a confirm prompt) appears on the landing result and on the cart page. Placement:
+
+* Classic cart, `[woocommerce_cart]` shortcode, Elementor Cart widget: added automatically above the cart via `woocommerce_before_cart`.
+* Cart block (`woocommerce/cart`): added automatically after the block via `render_block`.
+* Page-builder layouts where neither hook runs (e.g. a custom Elementor/Astra basket page): add a Shortcode widget containing `[osm_empty_basket]`. Optional attributes: `label`, `redirect`, `class`.
+
+The button only renders when the basket has items. To turn off the automatic placement and use only the shortcode: `add_filter( 'osm_badge_supplier_auto_cart_empty_button', '__return_false' );`
+
 == Frequently Asked Questions ==
 
 = Where is client_id sent? =
@@ -60,6 +72,11 @@ OSM tokens expire in about five minutes. The plugin never stores the order URL. 
 Some hosting providers’ egress IPs are blocked by OSM. The optional relay forwards the same POST from an allowlisted network (for example Cloudflare Workers). The relay secret is never shown on the public landing page.
 
 == Changelog ==
+
+= 1.0.6 =
+* Landing "Added to basket" table no longer appends the "(n)" level number after each badge name.
+* New setting "Admin debug panel" (off by default) gates the Admin debug (OSM HTTP) panel.
+* New "Empty basket" button (nonce + confirm) on the landing result and cart page; `[osm_empty_basket]` shortcode; auto-placement via `woocommerce_before_cart` and the `woocommerce/cart` block.
 
 = 1.0.5 =
 * Release tidy: documentation, GPLv2+, User-Agent uses site home URL, optional relay companion docs.
@@ -83,6 +100,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Adds Empty basket button/shortcode and makes the admin debug panel opt-in.
 
 = 1.0.5 =
 Documentation and release polish. Optional Cloudflare Worker relay companion included in the GitHub repository.

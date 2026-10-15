@@ -221,3 +221,23 @@
 		padding: 0.25rem 0;
 	}
 }
+
+.osm-badge-landing__actions .osm-empty-basket {
+	margin: 0;
+}
+
+.osm-badge-landing__actions .osm-empty-basket__btn {
+	padding: 0.65rem 1.25rem;
+	border-radius: 4px;
+	font-weight: 600;
+	line-height: 1.2;
+	background: #fff;
+	color: #c0392b;
+	border: 2px solid #c0392b;
+	cursor: pointer;
+}
+
+.osm-badge-landing__actions .osm-empty-basket__btn:hover,
+.osm-badge-landing__actions .osm-empty-basket__btn:focus {
+	background: #fef2f2;
+}
