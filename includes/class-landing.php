@@ -207,6 +207,10 @@ class OSM_Badge_Supplier_Landing {
 		);
 		$key = '';
 		foreach ( $patterns as $k => $re ) {
+			// Scout Network / Scout Active Support are not the Scouts section.
+			if ( 'scouts' === $k && ( preg_match( '/\bnetwork\b/i', $text ) || preg_match( '/\bactive\s+support\b/i', $text ) ) ) {
+				break;
+			}
 			if ( preg_match( $re, $text ) ) {
 				$key = $k;
 				break;

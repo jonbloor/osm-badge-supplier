@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.9
+Stable tag: 1.0.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,9 @@ OSM tokens expire in about five minutes. The plugin never stores the order URL. 
 Some hosting providers’ egress IPs are blocked by OSM. The optional relay forwards the same POST from an allowlisted network (for example Cloudflare Workers). The relay secret is never shown on the public landing page.
 
 == Changelog ==
+
+= 1.0.10 =
+* Continue shopping: Scout Network and Scout Active Support no longer map to the Scouts category (fall back to Shop).
 
 = 1.0.9 =
 * Landing result buttons: Checkout (primary), Continue shopping (product category for the order's section: Squirrels/Beavers/Cubs/Scouts/Explorers; falls back to Shop, then home), Empty basket (admin). View cart removed.
