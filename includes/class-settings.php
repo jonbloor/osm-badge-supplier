@@ -7,6 +7,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
+if ( class_exists( 'OSM_Badge_Supplier_Settings', false ) ) {
+	return;
+}
+
 /**
  * Settings page and options for OSM Badge Supplier.
  */

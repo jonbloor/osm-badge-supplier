@@ -17,6 +17,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
+if ( class_exists( 'OSM_Badge_Supplier_Empty_Basket', false ) ) {
+	return;
+}
+
 /**
  * Empty basket handler and renderers.
  */

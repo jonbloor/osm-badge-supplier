@@ -7,6 +7,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
+if ( class_exists( 'OSM_Badge_Supplier_Landing', false ) ) {
+	return;
+}
+
 /**
  * Handles the OSM order landing endpoint.
  */

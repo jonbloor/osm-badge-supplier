@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -73,6 +73,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 
 == Changelog ==
 
+= 1.0.8 =
+* Prevent fatal "Cannot redeclare function" when a second copy of the plugin folder is present (e.g. leftover from Upload Plugin / GitHub zip).
+
 = 1.0.7 =
 * Empty basket nonce is now tied to the WooCommerce customer session, so guests no longer share one nonce.
 
@@ -103,6 +106,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.8 =
+Safer activation when an old plugin folder is still installed.
 
 = 1.0.7 =
 Security hardening for the Empty basket nonce.

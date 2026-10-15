@@ -3,7 +3,7 @@
  * Plugin Name:       OSM Badge Supplier
  * Plugin URI:        https://shop.leicestershirescouts.org.uk/
  * Description:       Connect Online Scout Manager badge orders to WooCommerce (map stock_code to SKU, stage cart).
- * Version:           1.0.7
+ * Version:           1.0.8
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Requires at least: 5.8
@@ -19,7 +19,27 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'OSM_BADGE_SUPPLIER_VERSION', '1.0.7' );
+/*
+ * Bail if another copy of this plugin is already loaded (e.g. leftover folder
+ * from a GitHub zip or a second Upload Plugin). Without this, PHP fatals with
+ * "Cannot redeclare function osm_badge_supplier_bootstrap()".
+ */
+if ( defined( 'OSM_BADGE_SUPPLIER_VERSION' ) ) {
+	add_action(
+		'admin_notices',
+		static function () {
+			if ( ! current_user_can( 'activate_plugins' ) ) {
+				return;
+			}
+			echo '<div class="notice notice-error"><p>';
+			echo esc_html__( 'Multiple copies of OSM Badge Supplier are installed. Delete the unused folder under Plugins (keep only one osm-badge-supplier directory), then activate again.', 'osm-badge-supplier' );
+			echo '</p></div>';
+		}
+	);
+	return;
+}
+
+define( 'OSM_BADGE_SUPPLIER_VERSION', '1.0.8' );
 define( 'OSM_BADGE_SUPPLIER_FILE', __FILE__ );
 define( 'OSM_BADGE_SUPPLIER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'OSM_BADGE_SUPPLIER_URL', plugin_dir_url( __FILE__ ) );
