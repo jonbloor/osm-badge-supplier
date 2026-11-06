@@ -162,20 +162,35 @@
 	border-radius: 3px;
 }
 
-.osm-badge-landing__actions {
+.osm-badge-landing nav.osm-badge-landing__actions {
 	display: flex;
-	flex-wrap: wrap;
+	flex-flow: row wrap;
+	align-items: center;
+	justify-content: flex-start;
 	gap: 0.75rem;
 	margin-top: 0.5rem;
 }
 
-.osm-badge-landing__btn {
-	display: inline-block;
+/*
+ * Shrink each action to its label. The plugin never set width or min-width
+ * on these anchors (.osm-badge-landing__btn--continue has no rules at all),
+ * so a later theme rule such as `a { width: 100% }` stretches the coloured
+ * bar. fit-content beats that. Padding stays 0.65rem 1.25rem.
+ */
+.osm-badge-landing a.osm-badge-landing__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: fit-content;
+	max-width: 100%;
+	box-sizing: border-box;
 	padding: 0.65rem 1.25rem;
 	border-radius: 4px;
 	text-decoration: none;
 	font-weight: 600;
 	line-height: 1.2;
+	white-space: nowrap;
 	transition: background 0.15s ease, color 0.15s ease;
 }
 
