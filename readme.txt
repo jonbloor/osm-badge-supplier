@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.11
+Stable tag: 1.0.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,9 @@ OSM tokens expire in about five minutes. The plugin never stores the order URL. 
 Some hosting providers’ egress IPs are blocked by OSM. The optional relay forwards the same POST from an allowlisted network (for example Cloudflare Workers). The relay secret is never shown on the public landing page.
 
 == Changelog ==
+
+= 1.0.12 =
+* Landing result buttons: Continue shopping is the filled primary action (purple). Checkout stays in the same place and goes to the same URL, but uses the quieter teal outline. Labels and destinations are unchanged.
 
 = 1.0.11 =
 * The Elementor side cart no longer appears on the OSM landing page until the shopper opens it. The landing page is not an Elementor document, so Elementor's hide rule (body.elementor-default) never applied and shop CSS painted the drawer open.
