@@ -195,11 +195,11 @@ if ( $debug && ! empty( $view['show_admin_debug'] ) && current_user_can( 'manage
 <?php if ( ! $error || ! empty( $added ) ) : ?>
 	<nav class="osm-badge-landing__actions" aria-label="<?php echo esc_attr__( 'Cart actions', 'osm-badge-supplier' ); ?>">
 		<?php if ( ! empty( $added ) && ! $dry_run ) : ?>
-			<a class="osm-badge-landing__btn osm-badge-landing__btn--primary" href="<?php echo esc_url( $checkout_url ); ?>">
+			<a class="osm-badge-landing__btn osm-badge-landing__btn--secondary" href="<?php echo esc_url( $checkout_url ); ?>">
 				<?php echo esc_html__( 'Checkout', 'osm-badge-supplier' ); ?>
 			</a>
 		<?php endif; ?>
-		<a class="osm-badge-landing__btn osm-badge-landing__btn--secondary osm-badge-landing__btn--continue" href="<?php echo esc_url( $continue_url ); ?>">
+		<a class="osm-badge-landing__btn osm-badge-landing__btn--primary osm-badge-landing__btn--continue" href="<?php echo esc_url( $continue_url ); ?>">
 			<?php echo esc_html__( 'Continue shopping', 'osm-badge-supplier' ); ?>
 		</a>
 		<?php if ( ! $dry_run && class_exists( 'OSM_Badge_Supplier_Empty_Basket', false ) ) : ?>
