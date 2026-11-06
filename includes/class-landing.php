@@ -24,8 +24,11 @@ class OSM_Badge_Supplier_Landing {
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register_rewrite' ) );
 		add_filter( 'query_vars', array( __CLASS__, 'add_query_var' ) );
+		add_action( 'send_headers', array( __CLASS__, 'deny_page_cache' ), 0 );
+		add_action( 'wp', array( __CLASS__, 'deny_page_cache' ), 0 );
 		add_action( 'template_redirect', array( __CLASS__, 'handle_request' ) );
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'maybe_enqueue_assets' ) );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'maybe_enqueue_assets' ), 20 );
+		add_filter( 'body_class', array( __CLASS__, 'body_class' ) );
 	}
 
 	/**
@@ -59,7 +62,46 @@ class OSM_Badge_Supplier_Landing {
 	}
 
 	/**
-	 * Enqueue light CSS on the landing page only.
+	 * Landing pages are personalised (cart + order token). Stop full-page caches
+	 * such as W3 Total Cache from storing them. The bare /osm-order/ URL was
+	 * being stored with a public Cache-Control header because nocache_headers()
+	 * alone runs too late for disk page cache.
+	 */
+	public static function deny_page_cache() {
+		global $wp;
+		$on_landing = self::is_landing();
+		// send_headers runs before WP_Query is filled; the rewrite var is already on $wp.
+		if ( ! $on_landing && isset( $wp->query_vars[ self::QUERY_VAR ] ) && $wp->query_vars[ self::QUERY_VAR ] ) {
+			$on_landing = true;
+		}
+		if ( ! $on_landing ) {
+			return;
+		}
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		nocache_headers();
+	}
+
+	/**
+	 * Mark the landing document so cart-drawer CSS can target it.
+	 *
+	 * The shop header is an Elementor template, but this request is not an
+	 * Elementor page, so the body never gets `elementor-default`. Elementor
+	 * only hides the side cart with that class.
+	 *
+	 * @param array $classes Body classes.
+	 * @return array
+	 */
+	public static function body_class( $classes ) {
+		if ( self::is_landing() ) {
+			$classes[] = 'osm-badge-order';
+		}
+		return $classes;
+	}
+
+	/**
+	 * Enqueue landing CSS and the cart/loading script.
 	 */
 	public static function maybe_enqueue_assets() {
 		if ( ! self::is_landing() ) {
@@ -71,30 +113,84 @@ class OSM_Badge_Supplier_Landing {
 			array(),
 			OSM_BADGE_SUPPLIER_VERSION
 		);
+
+		$deps = array();
+		if ( wp_script_is( 'jquery', 'registered' ) ) {
+			$deps[] = 'jquery';
+		}
+		wp_enqueue_script(
+			'osm-badge-supplier-landing',
+			OSM_BADGE_SUPPLIER_URL . 'assets/js/landing.js',
+			$deps,
+			OSM_BADGE_SUPPLIER_VERSION,
+			true
+		);
+		wp_localize_script(
+			'osm-badge-supplier-landing',
+			'osmBadgeLanding',
+			array(
+				'nonce'     => wp_create_nonce( 'osm_badge_supplier_fetch' ),
+				'i18nError' => __( 'We could not load this badge order. Please go back to Online Scout Manager and try again.', 'osm-badge-supplier' ),
+			)
+		);
 	}
 
 	/**
-	 * Process landing request: require WC session, fetch once, map, render.
+	 * Make sure a WooCommerce session and cart exist for guests.
 	 */
-	public static function handle_request() {
-		if ( ! self::is_landing() ) {
+	protected static function ensure_cart() {
+		if ( ! function_exists( 'WC' ) ) {
 			return;
 		}
-
-		// Ensure WooCommerce session / cart exists for guests.
-		if ( function_exists( 'WC' ) ) {
-			if ( null === WC()->session ) {
-				WC()->initialize_session();
-			}
-			if ( WC()->session && ! WC()->session->has_session() ) {
-				WC()->session->set_customer_session_cookie( true );
-			}
-			if ( null === WC()->cart ) {
-				wc_load_cart();
-			}
+		if ( null === WC()->session ) {
+			WC()->initialize_session();
 		}
+		if ( WC()->session && ! WC()->session->has_session() ) {
+			WC()->session->set_customer_session_cookie( true );
+		}
+		if ( null === WC()->cart ) {
+			wc_load_cart();
+		}
+	}
 
-		$view = array(
+	/**
+	 * Whether this is the background order fetch (shop shell already painted).
+	 *
+	 * @return bool
+	 */
+	protected static function is_fetch_request() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handle_request().
+		return isset( $_POST['osm_badge_fetch'] ) && '1' === (string) wp_unslash( $_POST['osm_badge_fetch'] );
+	}
+
+	/**
+	 * order_url from OSM. Prefer the POST body on the background fetch.
+	 *
+	 * The value arrives URL-encoded. WordPress / PHP already decode once.
+	 * Do not re-encode or mutate it, and do not store it (the token expires in minutes).
+	 *
+	 * @return string
+	 */
+	protected static function read_order_url() {
+		$raw = '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- OSM inbound handshake; fetch nonce checked separately.
+		if ( isset( $_POST['order_url'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- OSM inbound handshake.
+			$raw = wp_unslash( $_POST['order_url'] );
+		} elseif ( isset( $_GET['order_url'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OSM inbound GET handshake.
+			$raw = wp_unslash( $_GET['order_url'] );
+		}
+		return is_string( $raw ) ? trim( $raw ) : '';
+	}
+
+	/**
+	 * Empty view used before OSM responds.
+	 *
+	 * @return array
+	 */
+	protected static function empty_view() {
+		return array(
 			'error'            => null,
 			'error_code'       => null,
 			'section'          => null,
@@ -106,25 +202,26 @@ class OSM_Badge_Supplier_Landing {
 			'checkout_url'     => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : home_url( '/checkout/' ),
 			'has_order_url'    => false,
 			'show_admin_debug' => false,
+			'loading'          => false,
+			'continue_url'     => home_url( '/' ),
+			'sync_url'         => '',
 		);
+	}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OSM inbound GET handshake.
-		$raw_order_url = isset( $_GET['order_url'] ) ? wp_unslash( $_GET['order_url'] ) : '';
-
-		/*
-		 * order_url arrives URL-encoded in the query string. WordPress / PHP
-		 * already decode once into $_GET. Do not re-encode or mutate it —
-		 * pass through to the client as the relative path OSM provided.
-		 */
-		$order_url = is_string( $raw_order_url ) ? $raw_order_url : '';
-		$order_url = trim( $order_url );
+	/**
+	 * Fetch OSM and map the cart. Does not store order_url.
+	 *
+	 * @param string $order_url Relative OSM path, or ''.
+	 * @return array
+	 */
+	protected static function build_view( $order_url ) {
+		$view      = self::empty_view();
+		$order_url = is_string( $order_url ) ? $order_url : '';
 
 		if ( '' !== $order_url ) {
 			$view['has_order_url'] = true;
 
 			$result = OSM_Badge_Supplier_OSM_Client::fetch_order( $order_url );
-
-			// Intentionally do not store $order_url anywhere (expires ~5 min).
 
 			$view['show_admin_debug'] = OSM_Badge_Supplier_Settings::is_admin_debug() && current_user_can( 'manage_woocommerce' );
 			if ( $view['show_admin_debug'] ) {
@@ -138,7 +235,7 @@ class OSM_Badge_Supplier_Landing {
 				$view['section'] = isset( $result['section'] ) ? $result['section'] : null;
 				$badges          = isset( $result['badges'] ) && is_array( $result['badges'] ) ? $result['badges'] : array();
 
-				$mapped = OSM_Badge_Supplier_Cart_Mapper::map_and_add( $badges, $view['dry_run'] );
+				$mapped              = OSM_Badge_Supplier_Cart_Mapper::map_and_add( $badges, $view['dry_run'] );
 				$view['added']       = $mapped['added'];
 				$view['unavailable'] = $mapped['unavailable'];
 
@@ -153,12 +250,78 @@ class OSM_Badge_Supplier_Landing {
 		}
 
 		$view['continue_url'] = self::continue_shopping_url( $view['section'] );
+		return $view;
+	}
+
+	/**
+	 * Process landing request.
+	 *
+	 * With an order_url, the shop shell is sent immediately and the OSM POST
+	 * runs on a second request. Otherwise the browser stays blank until
+	 * wp_remote_post returns (timeout 20 seconds). osm_sync=1 keeps that
+	 * blocking render for browsers without JavaScript.
+	 */
+	public static function handle_request() {
+		if ( ! self::is_landing() ) {
+			return;
+		}
+
+		self::ensure_cart();
+
+		$order_url = self::read_order_url();
+		$is_fetch  = self::is_fetch_request();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-mode flag only.
+		$is_sync = isset( $_GET['osm_sync'] ) && '1' === (string) wp_unslash( $_GET['osm_sync'] );
+
+		if ( $is_fetch ) {
+			nocache_headers();
+			$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+			if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'osm_badge_supplier_fetch' ) ) {
+				wp_send_json_error(
+					array(
+						'message' => __( 'This page has expired. Please go back to Online Scout Manager and open the shop again.', 'osm-badge-supplier' ),
+					),
+					403
+				);
+			}
+			$view = self::build_view( $order_url );
+			wp_send_json_success(
+				array(
+					'html'        => self::capture_results( $view ),
+					'unavailable' => count( $view['unavailable'] ),
+					'added'       => count( $view['added'] ),
+				)
+			);
+		}
+
+		$loading = ( '' !== $order_url && ! $is_sync );
+		if ( $loading ) {
+			$view             = self::empty_view();
+			$view['loading']  = true;
+			$view['sync_url'] = add_query_arg( 'osm_sync', '1' );
+		} else {
+			$view            = self::build_view( $order_url );
+			$view['loading'] = false;
+		}
 
 		status_header( 200 );
 		nocache_headers();
 
 		self::render( $view );
 		exit;
+	}
+
+	/**
+	 * Render the results partial to a string (background fetch payload).
+	 *
+	 * @param array $view Template variables.
+	 * @return string
+	 */
+	protected static function capture_results( array $view ) {
+		$template = OSM_BADGE_SUPPLIER_PATH . 'templates/landing-results.php';
+		ob_start();
+		include $template;
+		return (string) ob_get_clean();
 	}
 
 	/**

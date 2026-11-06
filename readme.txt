@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.10
+Stable tag: 1.0.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,13 @@ OSM tokens expire in about five minutes. The plugin never stores the order URL. 
 Some hosting providers’ egress IPs are blocked by OSM. The optional relay forwards the same POST from an allowlisted network (for example Cloudflare Workers). The relay secret is never shown on the public landing page.
 
 == Changelog ==
+
+= 1.0.11 =
+* The Elementor side cart no longer appears on the OSM landing page until the shopper opens it. The landing page is not an Elementor document, so Elementor's hide rule (body.elementor-default) never applied and shop CSS painted the drawer open.
+* Unavailable products are announced in an on-page alert (sticky on small screens) as well as the existing list, so the message is not only inside the side cart.
+* With an order link, the shop shell and a spinner render first. The OSM fetch and cart update run in a follow-up request instead of blocking the whole page on wp_remote_post (20s timeout). Browsers without JavaScript can use osm_sync=1.
+* SKU lookups for a badge order are batched through the WooCommerce product lookup table.
+* Landing responses set DONOTCACHEPAGE so full-page caches do not store a personalised order.
 
 = 1.0.10 =
 * Continue shopping: Scout Network and Scout Active Support no longer map to the Scouts category (fall back to Shop).
