@@ -45,9 +45,26 @@ The Worker accepts POST with `client_id` + `order_url` and header `X-OSM-Relay-S
 ## Security notes
 
 - Never commit Client ID, relay secrets, or live order URLs.
-- Admin-only debug on the landing page is off by default (WooCommerce → OSM Badges → Admin debug panel) and never prints `client_id` or the full order URL.
-- Order tokens expire in ~5 minutes and are not stored.
+- The order path must be a relative `/v3/badges/suppliers/order/` path. The plugin and the relay both reject a scheme, `//`, `..`, and control characters, and they do not rewrite the token.
+- The landing fetch nonce is tied to the WooCommerce customer session. Logged-out visitors do not share one nonce.
+- Admin-only debug on the landing page is off by default (WooCommerce → OSM Badges → Admin debug panel). It is stored per shop manager, and it never prints `client_id` or the full order URL.
+- Order tokens expire in about five minutes and are not stored.
 
 ## Development
 
 Plugin PHP entry: `osm-badge-supplier.php`. Landing rewrite slug defaults to `osm-order`.
+
+```bash
+composer install
+composer test
+composer lint
+node --test osm-relay-worker/worker.test.js
+```
+
+`composer test` and the relay test stub HTTP. They do not call Online Scout Manager.
+
+Build an installable zip (plugin folder at the zip root's `osm-badge-supplier/` directory, development files omitted via `.distignore`):
+
+```bash
+bin/build-plugin-zip.sh
+```

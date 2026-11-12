@@ -1,0 +1,26 @@
+{
+	"name": "leicestershire-scouts/osm-badge-supplier",
+	"description": "Development tools for the OSM Badge Supplier WordPress plugin. Not loaded on the shop.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"phpunit/phpunit": "^9.6",
+		"squizlabs/php_codesniffer": "^3.10",
+		"wp-coding-standards/wpcs": "^3.1"
+	},
+	"scripts": {
+		"test": "phpunit --no-coverage",
+		"lint": "phpcs --no-cache",
+		"lint:fix": "phpcbf"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
+	}
+}

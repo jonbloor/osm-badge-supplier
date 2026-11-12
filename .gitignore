@@ -1,6 +1,9 @@
 .DS_Store
 *.zip
 node_modules/
+vendor/
+.phpcs-cache
+.phpunit.result.cache
 .wrangler/
 .dev.vars
 .env

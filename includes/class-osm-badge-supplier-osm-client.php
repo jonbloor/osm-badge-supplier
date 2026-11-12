@@ -19,6 +19,18 @@ class OSM_Badge_Supplier_OSM_Client {
 	const DEBUG_TRANSIENT = 'osm_badge_supplier_last_http_debug';
 
 	/**
+	 * Relative path OSM uses for a badge-supplier order.
+	 */
+	const ORDER_PATH_PREFIX = '/v3/badges/suppliers/order/';
+
+	/**
+	 * Debug payload for this request. Not shared with other visitors.
+	 *
+	 * @var array|null
+	 */
+	protected static $request_debug = null;
+
+	/**
 	 * Fetch order from OSM.
 	 *
 	 * Protocol (strict):
@@ -40,7 +52,7 @@ class OSM_Badge_Supplier_OSM_Client {
 	 * }
 	 */
 	public static function fetch_order( $order_url ) {
-		$order_url = (string) $order_url;
+		$order_url = is_string( $order_url ) ? trim( $order_url ) : '';
 
 		if ( '' === $order_url ) {
 			return array(
@@ -50,17 +62,7 @@ class OSM_Badge_Supplier_OSM_Client {
 			);
 		}
 
-		// Must be a relative path starting with /.
-		if ( 0 !== strpos( $order_url, '/' ) ) {
-			return array(
-				'ok'         => false,
-				'error_code' => 'invalid_order_url',
-				'error'      => __( 'The order link looks invalid. Please go back to Online Scout Manager and click through again.', 'osm-badge-supplier' ),
-			);
-		}
-
-		// Reject absolute URLs / scheme injection.
-		if ( preg_match( '#^[a-z][a-z0-9+.-]*:#i', $order_url ) || false !== stripos( $order_url, '//' ) ) {
+		if ( ! self::is_valid_order_url( $order_url ) ) {
 			return array(
 				'ok'         => false,
 				'error_code' => 'invalid_order_url',
@@ -106,7 +108,7 @@ class OSM_Badge_Supplier_OSM_Client {
 				'User-Agent'         => $ua,
 				'X-OSM-Relay-Secret' => $relay_secret,
 			);
-			$body = array(
+			$body        = array(
 				'client_id' => $client_id,
 				'order_url' => $order_url,
 			);
@@ -118,7 +120,7 @@ class OSM_Badge_Supplier_OSM_Client {
 				'Accept'       => 'application/json',
 				'User-Agent'   => $ua,
 			);
-			$body = array(
+			$body        = array(
 				'client_id' => $client_id,
 			);
 		}
@@ -154,14 +156,16 @@ class OSM_Badge_Supplier_OSM_Client {
 			);
 		}
 
-		$code = (int) wp_remote_retrieve_response_code( $response );
+		$code     = (int) wp_remote_retrieve_response_code( $response );
 		$body_raw = (string) wp_remote_retrieve_body( $response );
-		$ct   = (string) wp_remote_retrieve_header( $response, 'content-type' );
-		$xblk = (string) wp_remote_retrieve_header( $response, 'x-blocked' );
+		$ct       = (string) wp_remote_retrieve_header( $response, 'content-type' );
+		$xblk     = (string) wp_remote_retrieve_header( $response, 'x-blocked' );
 
-		$prefix = substr( $body_raw, 0, 200 );
-		// Strip accidental secrets from debug prefix.
-		$prefix_safe = preg_replace( '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', '[uuid]', $prefix );
+		$prefix      = substr( $body_raw, 0, 200 );
+		$prefix_safe = self::redact_debug_prefix(
+			$prefix,
+			array( $client_id, $relay_secret )
+		);
 
 		self::store_debug(
 			array(
@@ -299,19 +303,107 @@ class OSM_Badge_Supplier_OSM_Client {
 	}
 
 	/**
-	 * Store last HTTP debug for admins (transient). Never stores client_id or full order_url.
+	 * Whether an OSM order path is safe to concatenate onto the OSM host.
+	 *
+	 * The value is an opaque token. It is checked, not rewritten: WordPress
+	 * sanitize_text_field() deletes every %HH sequence and would break the link.
+	 *
+	 * @param mixed $order_url Candidate path.
+	 * @return bool
+	 */
+	public static function is_valid_order_url( $order_url ) {
+		if ( ! is_string( $order_url ) || '' === $order_url ) {
+			return false;
+		}
+		if ( '/' !== $order_url[0] ) {
+			return false;
+		}
+		if ( preg_match( '#^[a-z][a-z0-9+.-]*:#i', $order_url ) || false !== strpos( $order_url, '//' ) ) {
+			return false;
+		}
+		if ( preg_match( '/[\x00-\x1F\x7F\\\\]/', $order_url ) ) {
+			return false;
+		}
+		if ( false !== strpos( $order_url, '..' ) ) {
+			return false;
+		}
+		if ( false !== stripos( $order_url, '%2e%2e' ) || false !== stripos( $order_url, '%2f%2f' ) || false !== stripos( $order_url, '%5c' ) ) {
+			return false;
+		}
+		$prefix = self::ORDER_PATH_PREFIX;
+		if ( 0 !== strpos( $order_url, $prefix ) || strlen( $order_url ) <= strlen( $prefix ) ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Remove secrets from a short response snippet before it is shown to an admin.
+	 *
+	 * @param string $prefix  Response prefix.
+	 * @param array  $secrets Values to remove when they are long enough to be unambiguous.
+	 * @return string
+	 */
+	public static function redact_debug_prefix( $prefix, array $secrets ) {
+		$prefix = preg_replace(
+			'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i',
+			'[uuid]',
+			(string) $prefix
+		);
+		$prefix = preg_replace( '/(_auth_guid=)[^&\s]*/i', '$1[redacted]', (string) $prefix );
+		foreach ( $secrets as $secret ) {
+			$secret = (string) $secret;
+			if ( strlen( $secret ) >= 8 ) {
+				$prefix = str_replace( $secret, '[redacted]', $prefix );
+			}
+		}
+		return (string) $prefix;
+	}
+
+	/**
+	 * Store last HTTP debug for the current shop manager.
+	 *
+	 * Customer requests are not written to the database. The payload never
+	 * includes client_id or the full order URL.
 	 *
 	 * @param array $debug Debug payload.
 	 */
 	public static function store_debug( array $debug ) {
-		set_transient( self::DEBUG_TRANSIENT, $debug, HOUR_IN_SECONDS );
+		self::$request_debug = $debug;
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( self::debug_transient_key(), $debug, HOUR_IN_SECONDS );
+		}
 	}
 
 	/**
+	 * Debug payload for the current shop manager, or null for everyone else.
+	 *
 	 * @return array|null
 	 */
 	public static function get_debug() {
-		$d = get_transient( self::DEBUG_TRANSIENT );
-		return is_array( $d ) ? $d : null;
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_woocommerce' ) ) {
+			return null;
+		}
+		if ( is_array( self::$request_debug ) ) {
+			return self::$request_debug;
+		}
+		if ( ! function_exists( 'get_transient' ) ) {
+			return null;
+		}
+		$debug = get_transient( self::debug_transient_key() );
+		return is_array( $debug ) ? $debug : null;
+	}
+
+	/**
+	 * Per-user transient name so one manager cannot read another's last response.
+	 *
+	 * @return string
+	 */
+	protected static function debug_transient_key() {
+		$user_id = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
+		return self::DEBUG_TRANSIENT . '_' . $user_id;
 	}
 }

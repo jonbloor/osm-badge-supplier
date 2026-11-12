@@ -281,7 +281,7 @@ class OSM_Badge_Supplier_Cart_Mapper {
 	protected static function product_ids_by_sku( array $skus ) {
 		global $wpdb;
 
-		$skus = array_values(
+		$skus  = array_values(
 			array_unique(
 				array_filter(
 					array_map(
@@ -299,12 +299,22 @@ class OSM_Badge_Supplier_Cart_Mapper {
 		}
 
 		$table = isset( $wpdb->wc_product_meta_lookup ) ? $wpdb->wc_product_meta_lookup : $wpdb->prefix . 'wc_product_meta_lookup';
+		if ( ! is_string( $table ) || ! preg_match( '/^[A-Za-z0-9_]+$/', $table ) ) {
+			return $found;
+		}
 		$ready = self::lookup_table_ready( $table );
 		if ( $ready ) {
 			$placeholders = implode( ',', array_fill( 0, count( $skus ), '%s' ) );
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholders are generated to match $skus.
-			$sql  = "SELECT sku, product_id FROM {$table} WHERE sku IN ($placeholders)";
-			$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$skus ), ARRAY_A );
+			// Table name is constrained to [A-Za-z0-9_]. Placeholders match $skus one for one.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT sku, product_id FROM {$table} WHERE sku IN ($placeholders)",
+					...$skus
+				),
+				ARRAY_A
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 			if ( is_array( $rows ) ) {
 				foreach ( $rows as $row ) {
 					if ( ! isset( $row['sku'] ) || '' === (string) $row['sku'] || isset( $found[ (string) $row['sku'] ] ) ) {
@@ -339,7 +349,7 @@ class OSM_Badge_Supplier_Cart_Mapper {
 		}
 		$like = $wpdb->esc_like( $table );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- one existence check per request.
-		$have = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+		$have            = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
 		$cache[ $table ] = ( $have === $table );
 		return $cache[ $table ];
 	}

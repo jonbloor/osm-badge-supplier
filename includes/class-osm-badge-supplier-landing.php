@@ -44,6 +44,8 @@ class OSM_Badge_Supplier_Landing {
 	}
 
 	/**
+	 * Register the landing query variable.
+	 *
 	 * @param array $vars Query vars.
 	 * @return array
 	 */
@@ -129,7 +131,7 @@ class OSM_Badge_Supplier_Landing {
 			'osm-badge-supplier-landing',
 			'osmBadgeLanding',
 			array(
-				'nonce'     => wp_create_nonce( 'osm_badge_supplier_fetch' ),
+				'nonce'     => wp_create_nonce( self::fetch_nonce_action() ),
 				'i18nError' => __( 'We could not load this badge order. Please go back to Online Scout Manager and try again.', 'osm-badge-supplier' ),
 			)
 		);
@@ -159,29 +161,45 @@ class OSM_Badge_Supplier_Landing {
 	 * @return bool
 	 */
 	protected static function is_fetch_request() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handle_request().
-		return isset( $_POST['osm_badge_fetch'] ) && '1' === (string) wp_unslash( $_POST['osm_badge_fetch'] );
+		if ( ! isset( $_POST['osm_badge_fetch'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- flag only; the fetch nonce is verified in handle_request() before the order is loaded.
+			return false;
+		}
+		$flag = sanitize_text_field( wp_unslash( $_POST['osm_badge_fetch'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- flag only; the fetch nonce is verified in handle_request() before the order is loaded.
+		return '1' === $flag;
 	}
 
 	/**
-	 * order_url from OSM. Prefer the POST body on the background fetch.
+	 * Order URL from OSM. Prefer the POST body on the background fetch.
 	 *
 	 * The value arrives URL-encoded. WordPress / PHP already decode once.
 	 * Do not re-encode or mutate it, and do not store it (the token expires in minutes).
+	 * sanitize_text_field() strips every %HH sequence, so the path is validated
+	 * by OSM_Badge_Supplier_OSM_Client::is_valid_order_url() instead.
 	 *
 	 * @return string
 	 */
 	protected static function read_order_url() {
 		$raw = '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- OSM inbound handshake; fetch nonce checked separately.
+		// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- OSM token. sanitize_text_field() would strip %HH sequences. Validated by is_valid_order_url(); the fetch nonce is checked before a POST is used.
 		if ( isset( $_POST['order_url'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- OSM inbound handshake.
 			$raw = wp_unslash( $_POST['order_url'] );
 		} elseif ( isset( $_GET['order_url'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OSM inbound GET handshake.
 			$raw = wp_unslash( $_GET['order_url'] );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		return is_string( $raw ) ? trim( $raw ) : '';
+	}
+
+	/**
+	 * Nonce action for the background fetch and the no-JavaScript link.
+	 *
+	 * Tied to the WooCommerce customer session so logged-out visitors do not
+	 * share one nonce.
+	 *
+	 * @return string
+	 */
+	protected static function fetch_nonce_action() {
+		return 'osm_badge_supplier_fetch|' . OSM_Badge_Supplier_Settings::customer_session_token();
 	}
 
 	/**
@@ -268,15 +286,10 @@ class OSM_Badge_Supplier_Landing {
 
 		self::ensure_cart();
 
-		$order_url = self::read_order_url();
-		$is_fetch  = self::is_fetch_request();
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-mode flag only.
-		$is_sync = isset( $_GET['osm_sync'] ) && '1' === (string) wp_unslash( $_GET['osm_sync'] );
-
-		if ( $is_fetch ) {
+		if ( self::is_fetch_request() ) {
 			nocache_headers();
 			$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
-			if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'osm_badge_supplier_fetch' ) ) {
+			if ( '' === $nonce || ! wp_verify_nonce( $nonce, self::fetch_nonce_action() ) ) {
 				wp_send_json_error(
 					array(
 						'message' => __( 'This page has expired. Please go back to Online Scout Manager and open the shop again.', 'osm-badge-supplier' ),
@@ -284,7 +297,7 @@ class OSM_Badge_Supplier_Landing {
 					403
 				);
 			}
-			$view = self::build_view( $order_url );
+			$view = self::build_view( self::read_order_url() );
 			wp_send_json_success(
 				array(
 					'html'        => self::capture_results( $view ),
@@ -294,15 +307,7 @@ class OSM_Badge_Supplier_Landing {
 			);
 		}
 
-		$loading = ( '' !== $order_url && ! $is_sync );
-		if ( $loading ) {
-			$view             = self::empty_view();
-			$view['loading']  = true;
-			$view['sync_url'] = add_query_arg( 'osm_sync', '1' );
-		} else {
-			$view            = self::build_view( $order_url );
-			$view['loading'] = false;
-		}
+		$view = self::view_for_page();
 
 		status_header( 200 );
 		nocache_headers();
@@ -312,12 +317,52 @@ class OSM_Badge_Supplier_Landing {
 	}
 
 	/**
+	 * Landing view for a full page load, including the no-JavaScript sync link.
+	 *
+	 * The osm_sync=1 flag fetches only when osm_fetch_nonce matches this session.
+	 * A missing or wrong nonce does not call OSM.
+	 *
+	 * @return array
+	 */
+	protected static function view_for_page() {
+		$order_url = self::read_order_url();
+		$is_sync   = isset( $_GET['osm_sync'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['osm_sync'] ) );
+
+		$loading = ( '' !== $order_url && ! $is_sync );
+		if ( $loading ) {
+			$view             = self::empty_view();
+			$view['loading']  = true;
+			$view['sync_url'] = wp_nonce_url( add_query_arg( 'osm_sync', '1' ), self::fetch_nonce_action(), 'osm_fetch_nonce' );
+		} elseif ( $is_sync ) {
+			$sync_nonce = isset( $_GET['osm_fetch_nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['osm_fetch_nonce'] ) ) : '';
+			if ( '' === $sync_nonce || ! wp_verify_nonce( $sync_nonce, self::fetch_nonce_action() ) ) {
+				$view                  = self::empty_view();
+				$view['error']         = __( 'This page has expired. Please go back to Online Scout Manager and open the shop again.', 'osm-badge-supplier' );
+				$view['error_code']    = 'expired';
+				$view['has_order_url'] = ( '' !== $order_url );
+				$view['loading']       = false;
+			} else {
+				$view            = self::build_view( $order_url );
+				$view['loading'] = false;
+			}
+		} else {
+			$view            = self::build_view( $order_url );
+			$view['loading'] = false;
+		}
+
+		return $view;
+	}
+
+	/**
 	 * Render the results partial to a string (background fetch payload).
 	 *
 	 * @param array $view Template variables.
 	 * @return string
 	 */
 	protected static function capture_results( array $view ) {
+		if ( ! is_array( $view ) ) {
+			return '';
+		}
 		$template = OSM_BADGE_SUPPLIER_PATH . 'templates/landing-results.php';
 		ob_start();
 		include $template;
@@ -368,7 +413,7 @@ class OSM_Badge_Supplier_Landing {
 			'cubs'      => '/\bcubs?\b/',
 			'scouts'    => '/\bscouts?\b/',
 		);
-		$key = '';
+		$key      = '';
 		foreach ( $patterns as $k => $re ) {
 			// Scout Network / Scout Active Support are not the Scouts section.
 			if ( 'scouts' === $k && ( preg_match( '/\bnetwork\b/i', $text ) || preg_match( '/\bactive\s+support\b/i', $text ) ) ) {
@@ -396,7 +441,7 @@ class OSM_Badge_Supplier_Landing {
 		$url = '';
 
 		if ( '' !== $key && taxonomy_exists( 'product_cat' ) ) {
-			$map = apply_filters(
+			$map    = apply_filters(
 				'osm_badge_supplier_section_category_slugs',
 				array(
 					'squirrels' => array( 'squirrels', 'squirrel' ),

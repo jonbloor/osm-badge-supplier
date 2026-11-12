@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<ruleset name="OSM Badge Supplier">
+	<description>WordPress coding standards for the OSM Badge Supplier plugin.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/tests/*</exclude-pattern>
+	<exclude-pattern>*/osm-relay-worker/*</exclude-pattern>
+
+	<arg value="s"/>
+	<arg name="extensions" value="php"/>
+
+	<!-- WordPress standard. manage_woocommerce is registered by WooCommerce. -->
+	<rule ref="WordPress"/>
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="manage_woocommerce"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="osm-badge-supplier"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>
