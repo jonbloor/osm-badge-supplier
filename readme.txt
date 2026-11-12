@@ -4,7 +4,7 @@ Tags: woocommerce, osm, scouts, badges
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.13
+Stable tag: 1.0.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,7 +45,9 @@ Optional: enable Admin debug panel to show the "Admin debug (OSM HTTP)" panel on
 
 == Empty basket button ==
 
-A nonce-protected "Empty basket" button (with a confirm prompt) appears on the landing result and on the cart page. Placement:
+A nonce-protected "Empty basket" button (with a confirm prompt) is for shop administrators by default. The visitor needs `manage_woocommerce` or `manage_options`. The label is "Empty basket (admin)", and the server refuses anyone else with HTTP 403. It appears on the landing result and on the cart page when the basket has items. To open it to every visitor: `add_filter( 'osm_badge_supplier_empty_basket_public', '__return_true' );`
+
+Placement:
 
 * Classic cart, `[woocommerce_cart]` shortcode, Elementor Cart widget: added automatically above the cart via `woocommerce_before_cart`.
 * Cart block (`woocommerce/cart`): added automatically after the block via `render_block`.
@@ -72,6 +74,13 @@ OSM tokens expire in about five minutes. The plugin never stores the order URL. 
 Some hosting providers’ egress IPs are blocked by OSM. The optional relay forwards the same POST from an allowlisted network (for example Cloudflare Workers). The relay secret is never shown on the public landing page.
 
 == Changelog ==
+
+= 1.0.14 =
+* Order links are accepted only as a relative `/v3/badges/suppliers/order/` path. A scheme, a protocol-relative URL, `..`, encoded traversal, and control characters are rejected before the shop contacts Online Scout Manager. The optional relay uses the same rule.
+* The landing fetch, and the no-JavaScript `osm_sync=1` link, use a nonce tied to the WooCommerce customer session.
+* Admin HTTP debug is stored for the current shop manager only, and is not stored for a customer checkout. Response snippets redact the client ID, relay secret, auth guid, and UUIDs. A transport error is shown in that panel when there is one.
+* WooCommerce → OSM Badge Supplier now edits the relay URL and secret. Saving that screen no longer clears them. Shop managers (`manage_woocommerce`) can save it. A relay URL saved from WooCommerce → Settings → OSM Badges must be HTTPS.
+* Class files are named to match their classes. No change to colours, button order, labels, or destinations on the landing page.
 
 = 1.0.13 =
 * Landing result buttons (Continue shopping, Checkout) size to their labels, with the same padding as before. Colours, order, labels, and destinations are unchanged.
@@ -127,6 +136,9 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.14 =
+Stricter checks on the OSM order link. Saving WooCommerce → OSM Badge Supplier no longer clears the relay URL or secret.
 
 = 1.0.9 =
 Empty basket becomes admin-only; adds Continue shopping on the landing page.

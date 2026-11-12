@@ -12,9 +12,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/** @var array $view */
-$view    = isset( $view ) && is_array( $view ) ? $view : array();
-$loading = ! empty( $view['loading'] );
+/**
+ * Variables for this landing shell.
+ *
+ * @var array $view
+ */
+$view     = isset( $view ) && is_array( $view ) ? $view : array();
+$loading  = ! empty( $view['loading'] );
 $sync_url = ! empty( $view['sync_url'] ) ? $view['sync_url'] : '';
 ?>
 <div class="osm-badge-landing">

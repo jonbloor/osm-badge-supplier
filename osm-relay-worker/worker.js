@@ -14,7 +14,7 @@ export default {
       }
 
       const secret = request.headers.get('X-OSM-Relay-Secret') || '';
-      if (!env.RELAY_SECRET || secret !== env.RELAY_SECRET) {
+      if (!env.RELAY_SECRET || !secretsMatch(secret, env.RELAY_SECRET)) {
         return json({ status: false, error: { message: 'Unauthorized', code: 'auth' } }, 401);
       }
 
@@ -34,18 +34,15 @@ export default {
         order_url = String(params.get('order_url') || '');
       }
 
-      if (!client_id || !order_url.startsWith('/') || /:\/\//.test(order_url)) {
+      if (!client_id || !isAllowedOrderPath(order_url)) {
         return json({ status: false, error: { message: 'Bad request', code: 'bad_request' } }, 400);
-      }
-      if (!order_url.startsWith('/v3/badges/suppliers/order/')) {
-        return json({ status: false, error: { message: 'Path not allowed', code: 'path' } }, 400);
       }
 
       const target = 'https://www.onlinescoutmanager.co.uk' + order_url;
       const body = new URLSearchParams();
       body.set('client_id', client_id);
 
-      const upstream = await fetch(target, {
+      const upstream = await globalThis.fetch(target, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -69,7 +66,6 @@ export default {
           error: {
             message: 'Relay exception',
             code: 'relay_exception',
-            detail: String(err && err.message ? err.message : err),
           },
         },
         500
@@ -77,6 +73,53 @@ export default {
     }
   },
 };
+
+/**
+ * Same path rule as OSM_Badge_Supplier_OSM_Client::is_valid_order_url().
+ * Relative /v3/badges/suppliers/order/… only. No scheme, traversal, or control characters.
+ *
+ * @param {string} orderUrl
+ * @return {boolean}
+ */
+export function isAllowedOrderPath(orderUrl) {
+  if (typeof orderUrl !== 'string' || orderUrl.length === 0) {
+    return false;
+  }
+  const prefix = '/v3/badges/suppliers/order/';
+  if (!orderUrl.startsWith(prefix) || orderUrl.length <= prefix.length) {
+    return false;
+  }
+  if (orderUrl.includes('..') || orderUrl.includes('\\') || orderUrl.includes('//')) {
+    return false;
+  }
+  if (/[\u0000-\u001F\u007F]/.test(orderUrl)) {
+    return false;
+  }
+  if (/%2e%2e/i.test(orderUrl) || /%2f%2f/i.test(orderUrl) || /%5c/i.test(orderUrl)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Length-sensitive compare that does not stop at the first differing character.
+ *
+ * @param {string} left
+ * @param {string} right
+ * @return {boolean}
+ */
+function secretsMatch(left, right) {
+  const a = String(left);
+  const b = String(right);
+  if (a.length === 0 || a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 function cors() {
   return {

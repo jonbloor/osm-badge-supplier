@@ -79,6 +79,8 @@ class OSM_Badge_Supplier_Empty_Basket {
 	}
 
 	/**
+	 * Button label for the current audience.
+	 *
 	 * @return string
 	 */
 	protected static function default_label() {
@@ -94,23 +96,16 @@ class OSM_Badge_Supplier_Empty_Basket {
 	 * @return string
 	 */
 	protected static function nonce_action() {
-		$customer = '';
-		if ( function_exists( 'WC' ) && WC()->session ) {
-			if ( method_exists( WC()->session, 'get_customer_unique_id' ) ) {
-				$customer = (string) WC()->session->get_customer_unique_id();
-			} elseif ( method_exists( WC()->session, 'get_customer_id' ) ) {
-				$customer = (string) WC()->session->get_customer_id();
-			}
-		}
-		return self::ACTION . '|' . $customer;
+		return self::ACTION . '|' . OSM_Badge_Supplier_Settings::customer_session_token();
 	}
 
 	/**
 	 * Handle the POSTed empty-basket request.
 	 */
 	public static function handle_request() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below.
-		if ( empty( $_POST['osm_badge_action'] ) || self::ACTION !== $_POST['osm_badge_action'] ) {
+		$posted_action = isset( $_POST['osm_badge_action'] ) ? wp_unslash( $_POST['osm_badge_action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- presence check; sanitized on the next line, nonce verified below.
+		$action        = is_string( $posted_action ) ? sanitize_key( $posted_action ) : '';
+		if ( self::ACTION !== $action ) {
 			return;
 		}
 
@@ -144,8 +139,9 @@ class OSM_Badge_Supplier_Empty_Basket {
 			}
 		}
 
-		$fallback = function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/' );
-		$redirect = isset( $_POST['osm_redirect'] ) ? esc_url_raw( wp_unslash( $_POST['osm_redirect'] ) ) : '';
+		$fallback        = function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/' );
+		$posted_redirect = isset( $_POST['osm_redirect'] ) ? wp_unslash( $_POST['osm_redirect'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified above; string is passed through esc_url_raw.
+		$redirect        = is_string( $posted_redirect ) ? esc_url_raw( $posted_redirect ) : '';
 		if ( '' === $redirect ) {
 			$redirect = wp_get_referer() ? wp_get_referer() : $fallback;
 		}
@@ -165,6 +161,9 @@ class OSM_Badge_Supplier_Empty_Basket {
 	 */
 	protected static function current_url() {
 		$uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+		if ( ! is_string( $uri ) || '' === $uri ) {
+			$uri = '/';
+		}
 		return home_url( $uri );
 	}
 
@@ -197,12 +196,26 @@ class OSM_Badge_Supplier_Empty_Basket {
 			return '';
 		}
 
-		$redirect = '' !== $args['redirect'] ? $args['redirect'] : self::current_url();
+		$redirect = is_string( $args['redirect'] ) ? esc_url_raw( $args['redirect'] ) : '';
+		if ( '' === $redirect ) {
+			$redirect = self::current_url();
+		}
 		if ( false !== strpos( $redirect, 'order_url=' ) && function_exists( 'wc_get_cart_url' ) ) {
 			$redirect = wc_get_cart_url();
 		}
 
-		$classes = trim( 'osm-empty-basket__btn button ' . $args['class'] );
+		$extra   = is_string( $args['class'] ) ? $args['class'] : '';
+		$classes = array( 'osm-empty-basket__btn', 'button' );
+		$pieces  = preg_split( '/\s+/', $extra );
+		$pieces  = is_array( $pieces ) ? $pieces : array();
+		foreach ( $pieces as $class_name ) {
+			$clean = sanitize_html_class( $class_name );
+			if ( '' !== $clean ) {
+				$classes[] = $clean;
+			}
+		}
+		$classes = implode( ' ', $classes );
+		$label   = sanitize_text_field( (string) $args['label'] );
 		$confirm = wp_json_encode( (string) $args['confirm'] );
 
 		$html  = '<form class="osm-empty-basket" method="post" action="' . esc_url( self::current_url() ) . '"';
@@ -210,7 +223,7 @@ class OSM_Badge_Supplier_Empty_Basket {
 		$html .= '<input type="hidden" name="osm_badge_action" value="' . esc_attr( self::ACTION ) . '" />';
 		$html .= wp_nonce_field( self::nonce_action(), self::NONCE, false, false );
 		$html .= '<input type="hidden" name="osm_redirect" value="' . esc_attr( $redirect ) . '" />';
-		$html .= '<button type="submit" class="' . esc_attr( $classes ) . '">' . esc_html( $args['label'] ) . '</button>';
+		$html .= '<button type="submit" class="' . esc_attr( $classes ) . '">' . esc_html( $label ) . '</button>';
 		$html .= '</form>';
 
 		return $html;
@@ -223,7 +236,7 @@ class OSM_Badge_Supplier_Empty_Basket {
 	 * @return string
 	 */
 	public static function shortcode( $atts ) {
-		$atts = shortcode_atts(
+		$atts                = shortcode_atts(
 			array(
 				'label'    => self::default_label(),
 				'redirect' => '',

@@ -3,11 +3,12 @@
  * Plugin Name:       OSM Badge Supplier
  * Plugin URI:        https://shop.leicestershirescouts.org.uk/
  * Description:       Connect Online Scout Manager badge orders to WooCommerce (map stock_code to SKU, stage cart).
- * Version:           1.0.13
+ * Version:           1.0.14
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Requires at least: 5.8
  * Requires PHP:      7.4
+ * Requires Plugins:  woocommerce
  * Author:            Leicestershire Scouts Shop Sub Committee
  * Text Domain:       osm-badge-supplier
  * Domain Path:       /languages
@@ -39,7 +40,7 @@ if ( defined( 'OSM_BADGE_SUPPLIER_VERSION' ) ) {
 	return;
 }
 
-define( 'OSM_BADGE_SUPPLIER_VERSION', '1.0.13' );
+define( 'OSM_BADGE_SUPPLIER_VERSION', '1.0.14' );
 define( 'OSM_BADGE_SUPPLIER_FILE', __FILE__ );
 define( 'OSM_BADGE_SUPPLIER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'OSM_BADGE_SUPPLIER_URL', plugin_dir_url( __FILE__ ) );
@@ -77,11 +78,11 @@ if ( ! function_exists( 'osm_badge_supplier_bootstrap' ) ) {
 			return;
 		}
 
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-settings.php';
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-client.php';
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-cart-mapper.php';
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-landing.php';
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-empty-basket.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-settings.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-osm-client.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-cart-mapper.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-landing.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-empty-basket.php';
 
 		OSM_Badge_Supplier_Settings::init();
 		OSM_Badge_Supplier_Landing::init();
@@ -118,8 +119,8 @@ if ( ! function_exists( 'osm_badge_supplier_activate' ) ) {
 			);
 		}
 
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-settings.php';
-		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-landing.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-settings.php';
+		require_once OSM_BADGE_SUPPLIER_PATH . 'includes/class-osm-badge-supplier-landing.php';
 
 		OSM_Badge_Supplier_Landing::register_rewrite();
 		flush_rewrite_rules();

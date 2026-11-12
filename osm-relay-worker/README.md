@@ -13,6 +13,6 @@ Configure the same URL and secret in WooCommerce → Settings → OSM Badges.
 
 ## Protocol
 
-- `POST` `application/x-www-form-urlencoded` or JSON: `client_id`, `order_url` (relative path starting with `/v3/badges/suppliers/order/`).
+- `POST` `application/x-www-form-urlencoded` or JSON: `client_id`, `order_url` (relative path starting with `/v3/badges/suppliers/order/`). Paths with a scheme, `//`, `..`, or control characters are rejected and are not forwarded.
 - Header: `X-OSM-Relay-Secret` must match the Worker secret.
 - Upstream: `POST https://www.onlinescoutmanager.co.uk{order_url}` with only `client_id` in the body.

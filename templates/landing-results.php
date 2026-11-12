@@ -10,18 +10,22 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/** @var array $view */
+/**
+ * Variables for the order result.
+ *
+ * @var array $view
+ */
 $view = isset( $view ) && is_array( $view ) ? $view : array();
 
-$error           = isset( $view['error'] ) ? $view['error'] : null;
-$error_code      = isset( $view['error_code'] ) ? $view['error_code'] : null;
-$section         = isset( $view['section'] ) ? $view['section'] : null;
-$added           = isset( $view['added'] ) && is_array( $view['added'] ) ? $view['added'] : array();
-$unavailable     = isset( $view['unavailable'] ) && is_array( $view['unavailable'] ) ? $view['unavailable'] : array();
-$dry_run         = ! empty( $view['dry_run'] );
-$client_id_empty = ! empty( $view['client_id_empty'] );
-$checkout_url    = isset( $view['checkout_url'] ) ? $view['checkout_url'] : '#';
-$continue_url    = ! empty( $view['continue_url'] ) ? $view['continue_url'] : home_url( '/' );
+$order_error      = isset( $view['error'] ) ? $view['error'] : null;
+$order_error_code = isset( $view['error_code'] ) ? $view['error_code'] : null;
+$section          = isset( $view['section'] ) ? $view['section'] : null;
+$added            = isset( $view['added'] ) && is_array( $view['added'] ) ? $view['added'] : array();
+$unavailable      = isset( $view['unavailable'] ) && is_array( $view['unavailable'] ) ? $view['unavailable'] : array();
+$dry_run          = ! empty( $view['dry_run'] );
+$client_id_empty  = ! empty( $view['client_id_empty'] );
+$checkout_url     = isset( $view['checkout_url'] ) ? $view['checkout_url'] : '#';
+$continue_url     = ! empty( $view['continue_url'] ) ? $view['continue_url'] : home_url( '/' );
 
 $section_label = '';
 if ( is_string( $section ) && '' !== $section ) {
@@ -71,21 +75,104 @@ if ( $debug && ! empty( $view['show_admin_debug'] ) && current_user_can( 'manage
 	<div class="osm-badge-landing__debug" role="status">
 		<p><strong><?php echo esc_html__( 'Admin debug (OSM HTTP — no secrets):', 'osm-badge-supplier' ); ?></strong></p>
 		<ul>
-			<li><?php echo esc_html( 'via: ' . ( isset( $debug['via'] ) ? (string) $debug['via'] : '' ) ); ?></li>
-			<li><?php echo esc_html( 'http_code: ' . ( isset( $debug['http_code'] ) ? (string) $debug['http_code'] : '' ) ); ?></li>
-			<li><?php echo esc_html( 'content_type: ' . ( isset( $debug['content_type'] ) ? (string) $debug['content_type'] : '' ) ); ?></li>
-			<li><?php echo esc_html( 'x_blocked: ' . ( isset( $debug['x_blocked'] ) ? (string) $debug['x_blocked'] : '' ) ); ?></li>
-			<li><?php echo esc_html( 'has_auth_guid: ' . ( ! empty( $debug['has_auth_guid'] ) ? 'yes' : 'no' ) ); ?></li>
-			<li><?php echo esc_html( 'order_url_len: ' . ( isset( $debug['order_url_len'] ) ? (string) $debug['order_url_len'] : '' ) ); ?></li>
-			<li><?php echo esc_html( 'body_prefix: ' . ( isset( $debug['body_prefix'] ) ? (string) $debug['body_prefix'] : '' ) ); ?></li>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: direct or relay */
+						__( 'via: %s', 'osm-badge-supplier' ),
+						isset( $debug['via'] ) ? (string) $debug['via'] : ''
+					)
+				);
+				?>
+			</li>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: HTTP status code */
+						__( 'http_code: %s', 'osm-badge-supplier' ),
+						isset( $debug['http_code'] ) ? (string) $debug['http_code'] : ''
+					)
+				);
+				?>
+			</li>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: response Content-Type */
+						__( 'content_type: %s', 'osm-badge-supplier' ),
+						isset( $debug['content_type'] ) ? (string) $debug['content_type'] : ''
+					)
+				);
+				?>
+			</li>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: x-blocked response header */
+						__( 'x_blocked: %s', 'osm-badge-supplier' ),
+						isset( $debug['x_blocked'] ) ? (string) $debug['x_blocked'] : ''
+					)
+				);
+				?>
+			</li>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: yes or no */
+						__( 'has_auth_guid: %s', 'osm-badge-supplier' ),
+						! empty( $debug['has_auth_guid'] ) ? __( 'yes', 'osm-badge-supplier' ) : __( 'no', 'osm-badge-supplier' )
+					)
+				);
+				?>
+			</li>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: character length of the order path */
+						__( 'order_url_len: %s', 'osm-badge-supplier' ),
+						isset( $debug['order_url_len'] ) ? (string) $debug['order_url_len'] : ''
+					)
+				);
+				?>
+			</li>
+			<?php if ( ! empty( $debug['wp_error'] ) ) : ?>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: transport error message */
+						__( 'wp_error: %s', 'osm-badge-supplier' ),
+						(string) $debug['wp_error']
+					)
+				);
+				?>
+			</li>
+			<?php endif; ?>
+			<li>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: start of the OSM response, with secrets removed */
+						__( 'body_prefix: %s', 'osm-badge-supplier' ),
+						isset( $debug['body_prefix'] ) ? (string) $debug['body_prefix'] : ''
+					)
+				);
+				?>
+			</li>
 		</ul>
 	</div>
 <?php endif; ?>
 
-<?php if ( $error ) : ?>
+<?php if ( $order_error ) : ?>
 	<div class="osm-badge-landing__error" role="alert">
-		<p><?php echo esc_html( $error ); ?></p>
-		<?php if ( in_array( $error_code, array( 'expired', 'osm_status_false', 'missing_order_url', 'invalid_order_url', 'http_error', 'invalid_json', 'http_status', 'osm_blocked' ), true ) ) : ?>
+		<p><?php echo esc_html( $order_error ); ?></p>
+		<?php if ( in_array( $order_error_code, array( 'expired', 'osm_status_false', 'missing_order_url', 'invalid_order_url', 'http_error', 'invalid_json', 'http_status', 'osm_blocked' ), true ) ) : ?>
 			<p class="osm-badge-landing__hint">
 				<?php echo esc_html__( 'Tip: order links from OSM expire after a few minutes. Open the shop again from Online Scout Manager.', 'osm-badge-supplier' ); ?>
 			</p>
@@ -192,7 +279,7 @@ if ( $debug && ! empty( $view['show_admin_debug'] ) && current_user_can( 'manage
 	</section>
 <?php endif; ?>
 
-<?php if ( ! $error || ! empty( $added ) ) : ?>
+<?php if ( ! $order_error || ! empty( $added ) ) : ?>
 	<nav class="osm-badge-landing__actions" aria-label="<?php echo esc_attr__( 'Cart actions', 'osm-badge-supplier' ); ?>">
 		<?php if ( ! empty( $added ) && ! $dry_run ) : ?>
 			<a class="osm-badge-landing__btn osm-badge-landing__btn--secondary" href="<?php echo esc_url( $checkout_url ); ?>">
