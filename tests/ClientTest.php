@@ -225,6 +225,45 @@ class ClientTest extends OSM_Test_Case {
 	}
 
 	/**
+	 * osm_sync=1 does not call OSM unless the nonce matches this session.
+	 */
+	public function test_osm_sync_fetches_only_with_a_valid_session_nonce() {
+		$order = '/v3/badges/suppliers/order/abc?_auth_guid=11111111-2222-3333-4444-555555555555';
+		$GLOBALS['osm_test_options'][ OSM_Badge_Supplier_Settings::OPTION_CLIENT_ID ] = 'client-secret-value';
+		$GLOBALS['osm_test_wc']->session = new OSM_Test_Session( 'guest-a' );
+
+		$_GET['order_url'] = $order;
+		$_GET['osm_sync']  = '1';
+
+		$missing = $this->invoke( 'OSM_Badge_Supplier_Landing', 'view_for_page' );
+		$this->assertSame( array(), $GLOBALS['osm_test_http'] );
+		$this->assertSame( 'expired', $missing['error_code'] );
+
+		$_GET['osm_fetch_nonce'] = 'not-this-session';
+		$wrong = $this->invoke( 'OSM_Badge_Supplier_Landing', 'view_for_page' );
+		$this->assertSame( array(), $GLOBALS['osm_test_http'] );
+		$this->assertSame( 'expired', $wrong['error_code'] );
+
+		$GLOBALS['osm_test_wc']->session = new OSM_Test_Session( 'guest-b' );
+		$other_session                   = wp_create_nonce( $this->invoke( 'OSM_Badge_Supplier_Landing', 'fetch_nonce_action' ) );
+		$GLOBALS['osm_test_wc']->session = new OSM_Test_Session( 'guest-a' );
+		$_GET['osm_fetch_nonce']         = $other_session;
+		$crossed = $this->invoke( 'OSM_Badge_Supplier_Landing', 'view_for_page' );
+		$this->assertSame( array(), $GLOBALS['osm_test_http'] );
+		$this->assertSame( 'expired', $crossed['error_code'] );
+
+		$this->stub_ok_response();
+		$_GET['osm_fetch_nonce'] = wp_create_nonce( $this->invoke( 'OSM_Badge_Supplier_Landing', 'fetch_nonce_action' ) );
+		$ok                      = $this->invoke( 'OSM_Badge_Supplier_Landing', 'view_for_page' );
+
+		$this->assertCount( 1, $GLOBALS['osm_test_http'] );
+		$this->assertSame( OSM_BADGE_SUPPLIER_DEFAULT_HOST . $order, $GLOBALS['osm_test_http'][0]['url'] );
+		$this->assertStringNotContainsString( 'client-secret-value', $GLOBALS['osm_test_http'][0]['url'] );
+		$this->assertNotSame( 'expired', $ok['error_code'] );
+		$this->assertFalse( $ok['loading'] );
+	}
+
+	/**
 	 * Canned successful OSM payload. Not a live response.
 	 */
 	private function stub_ok_response() {

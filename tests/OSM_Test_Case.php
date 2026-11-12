@@ -21,6 +21,10 @@ abstract class OSM_Test_Case extends PHPUnit\Framework\TestCase {
 		$GLOBALS['osm_test_user_id']    = 0;
 		$GLOBALS['osm_test_caps']       = array();
 		$GLOBALS['osm_test_filters']    = array();
+		$GLOBALS['osm_test_hooks']      = array(
+			'filter' => array(),
+			'action' => array(),
+		);
 		$GLOBALS['osm_test_nonces']     = array();
 		$GLOBALS['osm_test_notices']    = array();
 		$GLOBALS['osm_test_redirect']   = null;

@@ -521,6 +521,28 @@ function current_user_can( $cap ) {
 }
 
 /**
+ * @param string       $hook     Hook.
+ * @param callable     $callback Callback.
+ * @param int          $priority Priority.
+ * @param int          $args     Accepted args.
+ */
+function add_filter( $hook, $callback, $priority = 10, $args = 1 ) {
+	unset( $priority, $args );
+	$GLOBALS['osm_test_hooks']['filter'][ $hook ][] = $callback;
+}
+
+/**
+ * @param string       $hook     Hook.
+ * @param callable     $callback Callback.
+ * @param int          $priority Priority.
+ * @param int          $args     Accepted args.
+ */
+function add_action( $hook, $callback, $priority = 10, $args = 1 ) {
+	unset( $priority, $args );
+	$GLOBALS['osm_test_hooks']['action'][ $hook ][] = $callback;
+}
+
+/**
  * @param string $hook  Hook.
  * @param mixed  $value Value.
  * @return mixed

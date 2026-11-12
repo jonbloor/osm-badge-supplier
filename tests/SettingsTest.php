@@ -93,6 +93,49 @@ class SettingsTest extends OSM_Test_Case {
 	}
 
 	/**
+	 * options.php allows shop managers on this group and no other.
+	 */
+	public function test_option_page_capability_is_only_lowered_for_this_group() {
+		$this->assertSame(
+			'manage_woocommerce',
+			OSM_Badge_Supplier_Settings::capability_for_option_page( 'osm_badge_supplier_settings', 'manage_options' )
+		);
+		$this->assertSame(
+			'manage_woocommerce',
+			OSM_Badge_Supplier_Settings::capability_for_option_page( OSM_Badge_Supplier_Settings::SETTINGS_GROUP )
+		);
+		$this->assertSame(
+			'manage_options',
+			OSM_Badge_Supplier_Settings::capability_for_option_page( 'general', 'manage_options' )
+		);
+		$this->assertSame(
+			'manage_options',
+			OSM_Badge_Supplier_Settings::capability_for_option_page( 'woocommerce', 'manage_options' )
+		);
+		$this->assertSame(
+			'manage_network_options',
+			OSM_Badge_Supplier_Settings::capability_for_option_page( 'writing', 'manage_network_options' )
+		);
+
+		OSM_Badge_Supplier_Settings::init();
+		$filters = $GLOBALS['osm_test_hooks']['filter'];
+		$ours    = 'option_page_capability_' . OSM_Badge_Supplier_Settings::SETTINGS_GROUP;
+
+		$this->assertArrayHasKey( $ours, $filters );
+		$this->assertSame(
+			'manage_woocommerce',
+			call_user_func( $filters[ $ours ][0], 'manage_options' )
+		);
+
+		foreach ( array_keys( $filters ) as $hook ) {
+			if ( 0 === strpos( $hook, 'option_page_capability_' ) ) {
+				$this->assertSame( $ours, $hook );
+			}
+		}
+		$this->assertArrayNotHasKey( 'option_page_capability_general', $filters );
+	}
+
+	/**
 	 * Two guests do not share a customer token.
 	 */
 	public function test_customer_session_token_follows_the_session() {

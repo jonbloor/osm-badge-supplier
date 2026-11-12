@@ -79,7 +79,7 @@ Some hosting providers’ egress IPs are blocked by OSM. The optional relay forw
 * Order links are accepted only as a relative `/v3/badges/suppliers/order/` path. A scheme, a protocol-relative URL, `..`, encoded traversal, and control characters are rejected before the shop contacts Online Scout Manager. The optional relay uses the same rule.
 * The landing fetch, and the no-JavaScript `osm_sync=1` link, use a nonce tied to the WooCommerce customer session.
 * Admin HTTP debug is stored for the current shop manager only, and is not stored for a customer checkout. Response snippets redact the client ID, relay secret, auth guid, and UUIDs. A transport error is shown in that panel when there is one.
-* WooCommerce → OSM Badge Supplier now edits the relay URL and secret. Saving that screen no longer clears them. Shop managers (`manage_woocommerce`) can save it. A relay URL saved from WooCommerce → Settings → OSM Badges must be HTTPS.
+* WooCommerce → OSM Badge Supplier now edits the relay URL and secret. Saving that screen no longer clears them. Shop managers (`manage_woocommerce`) can save it: options.php allows this settings group via `option_page_capability_osm_badge_supplier_settings`. A relay URL saved from WooCommerce → Settings → OSM Badges must be HTTPS.
 * Class files are named to match their classes. No change to colours, button order, labels, or destinations on the landing page.
 
 = 1.0.13 =

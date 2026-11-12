@@ -16,6 +16,14 @@ if ( class_exists( 'OSM_Badge_Supplier_Settings', false ) ) {
  */
 class OSM_Badge_Supplier_Settings {
 
+	/**
+	 * Settings API option group for the submenu form.
+	 *
+	 * The options.php screen authorises a save with option_page_capability_{group}.
+	 * The capability argument of register_setting() is not read there.
+	 */
+	const SETTINGS_GROUP = 'osm_badge_supplier_settings';
+
 	const OPTION_CLIENT_ID    = 'osm_badge_supplier_client_id';
 	const OPTION_LANDING      = 'osm_badge_supplier_landing_slug';
 	const OPTION_HOST         = 'osm_badge_supplier_osm_host';
@@ -44,6 +52,39 @@ class OSM_Badge_Supplier_Settings {
 		add_action( 'admin_menu', array( __CLASS__, 'add_submenu' ), 60 );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'update_option_' . self::OPTION_LANDING, array( __CLASS__, 'maybe_flush_on_slug_change' ), 10, 2 );
+
+		// This group only. Other option pages keep manage_options.
+		add_filter( 'option_page_capability_' . self::SETTINGS_GROUP, array( __CLASS__, 'option_page_capability' ) );
+	}
+
+	/**
+	 * Capability options.php should require for one Settings API group.
+	 *
+	 * The default for every group is manage_options. This plugin lowers that
+	 * for its own group so a shop manager can save the submenu. Any other
+	 * group is returned unchanged.
+	 *
+	 * @param string $option_page Option group slug from options.php.
+	 * @param string $capability  Capability WordPress would otherwise require.
+	 * @return string
+	 */
+	public static function capability_for_option_page( $option_page, $capability = 'manage_options' ) {
+		if ( self::SETTINGS_GROUP === $option_page ) {
+			return 'manage_woocommerce';
+		}
+		return (string) $capability;
+	}
+
+	/**
+	 * Filter callback for option_page_capability_osm_badge_supplier_settings.
+	 *
+	 * Hooked only to this plugin's group, so it cannot change another page.
+	 *
+	 * @param string $capability Incoming capability. Ignored; the hook name is the group.
+	 * @return string
+	 */
+	public static function option_page_capability( $capability ) {
+		return self::capability_for_option_page( self::SETTINGS_GROUP, $capability );
 	}
 
 	/**
@@ -169,7 +210,7 @@ class OSM_Badge_Supplier_Settings {
 	 */
 	public static function register_settings() {
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_CLIENT_ID,
 			array(
 				'type'              => 'string',
@@ -179,7 +220,7 @@ class OSM_Badge_Supplier_Settings {
 			)
 		);
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_LANDING,
 			array(
 				'type'              => 'string',
@@ -189,7 +230,7 @@ class OSM_Badge_Supplier_Settings {
 			)
 		);
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_HOST,
 			array(
 				'type'              => 'string',
@@ -199,7 +240,7 @@ class OSM_Badge_Supplier_Settings {
 			)
 		);
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_DRY_RUN,
 			array(
 				'type'              => 'string',
@@ -209,7 +250,7 @@ class OSM_Badge_Supplier_Settings {
 			)
 		);
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_ADMIN_DEBUG,
 			array(
 				'type'              => 'string',
@@ -219,7 +260,7 @@ class OSM_Badge_Supplier_Settings {
 			)
 		);
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_RELAY_URL,
 			array(
 				'type'              => 'string',
@@ -229,7 +270,7 @@ class OSM_Badge_Supplier_Settings {
 			)
 		);
 		register_setting(
-			'osm_badge_supplier_settings',
+			self::SETTINGS_GROUP,
 			self::OPTION_RELAY_SECRET,
 			array(
 				'type'              => 'string',
@@ -380,7 +421,7 @@ class OSM_Badge_Supplier_Settings {
 			<p><?php echo esc_html__( 'You can also edit these under WooCommerce → Settings → OSM Badges.', 'osm-badge-supplier' ); ?></p>
 
 			<form method="post" action="options.php">
-				<?php settings_fields( 'osm_badge_supplier_settings' ); ?>
+				<?php settings_fields( self::SETTINGS_GROUP ); ?>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="osm_client_id"><?php echo esc_html__( 'Client ID', 'osm-badge-supplier' ); ?></label></th>

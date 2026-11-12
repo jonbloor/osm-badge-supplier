@@ -286,11 +286,7 @@ class OSM_Badge_Supplier_Landing {
 
 		self::ensure_cart();
 
-		$order_url = self::read_order_url();
-		$is_fetch  = self::is_fetch_request();
-		$is_sync   = isset( $_GET['osm_sync'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['osm_sync'] ) );
-
-		if ( $is_fetch ) {
+		if ( self::is_fetch_request() ) {
 			nocache_headers();
 			$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
 			if ( '' === $nonce || ! wp_verify_nonce( $nonce, self::fetch_nonce_action() ) ) {
@@ -301,7 +297,7 @@ class OSM_Badge_Supplier_Landing {
 					403
 				);
 			}
-			$view = self::build_view( $order_url );
+			$view = self::build_view( self::read_order_url() );
 			wp_send_json_success(
 				array(
 					'html'        => self::capture_results( $view ),
@@ -310,6 +306,27 @@ class OSM_Badge_Supplier_Landing {
 				)
 			);
 		}
+
+		$view = self::view_for_page();
+
+		status_header( 200 );
+		nocache_headers();
+
+		self::render( $view );
+		exit;
+	}
+
+	/**
+	 * Landing view for a full page load, including the no-JavaScript sync link.
+	 *
+	 * The osm_sync=1 flag fetches only when osm_fetch_nonce matches this session.
+	 * A missing or wrong nonce does not call OSM.
+	 *
+	 * @return array
+	 */
+	protected static function view_for_page() {
+		$order_url = self::read_order_url();
+		$is_sync   = isset( $_GET['osm_sync'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['osm_sync'] ) );
 
 		$loading = ( '' !== $order_url && ! $is_sync );
 		if ( $loading ) {
@@ -333,11 +350,7 @@ class OSM_Badge_Supplier_Landing {
 			$view['loading'] = false;
 		}
 
-		status_header( 200 );
-		nocache_headers();
-
-		self::render( $view );
-		exit;
+		return $view;
 	}
 
 	/**
